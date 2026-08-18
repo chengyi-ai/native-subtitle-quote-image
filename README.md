@@ -10,9 +10,19 @@
 
 ## Demo
 
-下面是一张已有视频的实际处理成品。它保留顶部主画面，并把不同时间点出现的原生字幕裁切后依次拼接成 3:4 长图。
+下面是已有视频的实际处理成品。单张示例保留顶部主画面，并把不同时间点出现的原生字幕裁切后依次拼接成 3:4 长图；总览图展示一次多图任务的成套输出。
 
-![原生字幕拼图 Demo](examples/demo-native-subtitle-collage.jpg)
+### 单张拼图
+
+<p align="center">
+  <img src="examples/demo-native-subtitle-collage.jpg" alt="原生字幕拼图单张 Demo" width="420">
+</p>
+
+### 成套输出总览
+
+<p align="center">
+  <img src="examples/demo-output-overview.jpg" alt="原生字幕拼图成套输出总览" width="720">
+</p>
 
 示例图片仅用于展示 Skill 的输出效果；图片及其中出现的第三方内容不属于本仓库 MIT License 的授权范围。
 
