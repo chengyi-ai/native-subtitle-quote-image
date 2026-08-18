@@ -8,6 +8,14 @@
 - 符合 Codex 插件结构的安装包；
 - 生成字幕区域预览、成品 JPG、时间点清单和总览图的本地脚本。
 
+## Demo
+
+下面是一张已有视频的实际处理成品。它保留顶部主画面，并把不同时间点出现的原生字幕裁切后依次拼接成 3:4 长图。
+
+![原生字幕拼图 Demo](examples/demo-native-subtitle-collage.jpg)
+
+示例图片仅用于展示 Skill 的输出效果；图片及其中出现的第三方内容不属于本仓库 MIT License 的授权范围。
+
 ## 安装
 
 ### Codex Skill Installer
