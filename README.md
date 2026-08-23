@@ -1,12 +1,15 @@
 # 原生字幕拼图 Skill
 
+[![Validate](https://github.com/chengyi-ai/native-subtitle-quote-image/actions/workflows/validate.yml/badge.svg)](https://github.com/chengyi-ai/native-subtitle-quote-image/actions/workflows/validate.yml)
+
 把带有画面内嵌字幕的视频按精确时间点取帧，生成适合社交平台的 3:4 字幕拼接长图。它保留原视频画面和原生字幕，不重新绘制、翻译或覆盖文字。
 
 本仓库同时提供：
 
 - 可直接复制到兼容 Agent 的独立 Skill；
 - 符合 Codex 插件结构的安装包；
-- 生成字幕区域预览、成品 JPG、时间点清单和总览图的本地脚本。
+- 自动生成带时间点的候选帧总览；
+- 生成字幕区域预览、成品 JPG、时间点清单和最终总览图的本地脚本。
 
 ## Demo
 
@@ -40,7 +43,8 @@ https://github.com/chengyi-ai/native-subtitle-quote-image/tree/main/skills/nativ
 
 ```bash
 git clone https://github.com/chengyi-ai/native-subtitle-quote-image.git
-cp -R native-subtitle-quote-image/skills/native-subtitle-quote-image ~/.agents/skills/
+mkdir -p ~/.codex/skills
+cp -R native-subtitle-quote-image/skills/native-subtitle-quote-image ~/.codex/skills/
 ```
 
 重新打开 Codex 任务后即可使用 `$native-subtitle-quote-image`。
@@ -72,6 +76,44 @@ Agent 会先检查视频字幕与裁切区域，再选择字幕稳定出现的�
 - 逐张 3:4 JPG；
 - `原生字幕时间点.json`；
 - `final_contact_sheet.jpg` 总览图。
+
+## 本地脚本
+
+先生成带时间点的候选帧总览，减少反复试时间点：
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py sample VIDEO \
+  --start 30 --end 120 --interval 5 --out candidate-contact-sheet.jpg
+```
+
+不传 `--start`、`--end` 和 `--interval` 时，脚本会在整段视频中自动均匀抽取最多 24 帧。确认字幕区域和时间点后，再使用 `band` 与 `render`；完整参数可通过 `--help` 查看。
+
+脚本默认拒绝覆盖已有图片。确认需要替换当前输出时，显式添加 `--overwrite`。
+
+## 常见问题
+
+### 怎么判断视频是不是烧录字幕？
+
+- 关闭播放器的 CC/字幕开关后，字幕仍留在画面里；
+- 任意截取一帧，字幕会直接出现在图片像素中；
+- 如果字幕可以单独关闭、切换语言或下载为 `.srt`，通常是外挂字幕，不属于本 Skill 的输入。
+
+### 带烧录字幕的视频从哪里来？
+
+优先使用自己拍摄并添加字幕的视频、自己已获得授权的素材，或明确允许再利用的公开视频。最稳定的方式是先在剪辑软件中把字幕烧录进自己有权使用的视频，再交给本 Skill 取帧。搜索现成素材时可以使用“硬字幕”“内嵌字幕”“中文字幕”等关键词，但下载和公开生成图片前仍需确认使用权。
+
+### 为什么没有自动识别或重绘字幕？
+
+这个 Skill 的目标是保留原视频画面与原生字幕。OCR、翻译、外挂字幕合成和重新绘字属于不同工作流，刻意不在本仓库内混合实现。
+
+## 项目验证
+
+```bash
+python3 scripts/validate_repo.py
+python3 -m unittest discover -s tests -v
+```
+
+每次推送和 Pull Request 也会通过 GitHub Actions 自动运行相同检查。
 
 ## 适用边界
 

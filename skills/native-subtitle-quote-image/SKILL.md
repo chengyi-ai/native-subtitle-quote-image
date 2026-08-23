@@ -10,10 +10,10 @@ description: 将自带画面内嵌中文字幕的视频，按真实字幕出现�
 ## 路径与依赖
 
 - 将下文的 `<SKILL_DIR>` 解析为当前 `SKILL.md` 所在目录的绝对路径。不要假设 Agent 的工作目录就是 Skill 目录。
-- 使用 Python 3.10+。运行前检查 Pillow 与 FFmpeg：
+- 使用 Python 3.10+。运行前用脚本自身检查 Pillow 与 FFmpeg：
 
   ```bash
-  python3 -c "from PIL import Image; import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())"
+  python3 "<SKILL_DIR>/scripts/native_subtitle_stitch.py" --help
   ```
 
 - 依赖缺失时，先向用户说明并取得安装授权，再运行：
@@ -33,16 +33,23 @@ description: 将自带画面内嵌中文字幕的视频，按真实字幕出现�
 
 ## 工作流
 
-1. 确认输入是本地视频，且字幕烧录在画面内。若只有外部字幕或没有字幕，改用 `$video-quote-image`。
-2. 抽取候选区间的缩略图，选择字幕完整显示的中间帧。相邻时间点必须对应不同句字幕，避免空字幕、同句重复和字幕切换瞬间。
-3. 先预览字幕区域：
+1. 确认输入是本地视频，且字幕烧录在画面内。若只有外挂字幕或没有字幕，先停止并说明这个 Skill 不适用；不要假设用户安装了其他 Skill。
+2. 生成带时间点的候选帧总览。未指定区间时，脚本会在整段视频中自动均匀抽取最多 24 帧；需要细看某一区间时再传入起止时间与间隔：
+
+   ```bash
+   python3 "<SKILL_DIR>/scripts/native_subtitle_stitch.py" sample VIDEO \
+     --start 30 --end 120 --interval 5 --out candidate-contact-sheet.jpg
+   ```
+
+3. 从候选总览中选择字幕完整显示的中间帧。相邻时间点必须对应不同句字幕，避免空字幕、同句重复和字幕切换瞬间。
+4. 预览字幕区域：
 
    ```bash
    python3 "<SKILL_DIR>/scripts/native_subtitle_stitch.py" band VIDEO -t 60 \
      --band-top 0.68 --band-bottom 0.96 --out band-preview.jpg
    ```
 
-4. 在任务输出目录创建 manifest：
+5. 在任务输出目录创建 manifest：
 
    ```json
    {
@@ -52,7 +59,7 @@ description: 将自带画面内嵌中文字幕的视频，按真实字幕出现�
    }
    ```
 
-5. 渲染整套：
+6. 渲染整套：
 
    ```bash
    python3 "<SKILL_DIR>/scripts/native_subtitle_stitch.py" render VIDEO \
@@ -60,8 +67,8 @@ description: 将自带画面内嵌中文字幕的视频，按真实字幕出现�
      --aspect 3:4 --width 1440 --band-top 0.68 --band-bottom 0.96
    ```
 
-6. 使用图像查看工具逐张检查最终 JPG 和 `final_contact_sheet.jpg`。检查字幕完整、无重复、无人脸被异常切断、画面条之间无黑边或空白。
-7. 有问题时只调整对应 manifest 时间点 0.5–3 秒，重新渲染并再次检查。
+7. 使用图像查看工具逐张检查最终 JPG 和 `final_contact_sheet.jpg`。检查字幕完整、无重复、无人脸被异常切断、画面条之间无黑边或空白。
+8. 有问题时只调整对应 manifest 时间点 0.5–3 秒；确认要替换当前输出后，在重新渲染时添加 `--overwrite`，并再次检查。
 
 ## 选帧规则
 
@@ -73,6 +80,9 @@ description: 将自带画面内嵌中文字幕的视频，按真实字幕出现�
 
 ## 资源
 
+- `sample`：生成带时间点的候选帧总览，减少手工试错。
+- `band`：预览字幕裁切区域。
+- `render`：按 manifest 精确取帧并生成成品。
 - `scripts/native_subtitle_stitch.py`：精确取帧、裁切、拼图和总览图生成器。
 - `requirements.txt`：运行脚本所需的 Python 依赖。
 
