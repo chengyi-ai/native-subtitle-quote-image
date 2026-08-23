@@ -12,11 +12,12 @@ SKILL_DIR = ROOT / "skills" / "native-subtitle-quote-image"
 SKILL_FILE = SKILL_DIR / "SKILL.md"
 OPENAI_YAML = SKILL_DIR / "agents" / "openai.yaml"
 RENDERER = SKILL_DIR / "scripts" / "native_subtitle_stitch.py"
+ENV_CHECK = SKILL_DIR / "scripts" / "check_environment.py"
 README = ROOT / "README.md"
 README_EN = ROOT / "README_EN.md"
 PLUGIN = ROOT / ".codex-plugin" / "plugin.json"
 EXPECTED_NAME = "native-subtitle-quote-image"
-EXPECTED_VERSION = "1.1.0"
+EXPECTED_VERSION = "1.2.0"
 
 
 def main():
@@ -31,6 +32,9 @@ def main():
         OPENAI_YAML,
         SKILL_DIR / "requirements.txt",
         RENDERER,
+        ENV_CHECK,
+        SKILL_DIR / "references" / "yt-dlp-and-transcripts.md",
+        SKILL_DIR / "references" / "end-to-end-workflow.md",
         ROOT / ".github" / "workflows" / "validate.yml",
     ]
     for path in required:
@@ -66,6 +70,34 @@ def main():
     if f"${EXPECTED_NAME}" not in yaml_text:
         errors.append("agents/openai.yaml default_prompt 未引用当前 Skill")
 
+    for reference in (
+        "references/yt-dlp-and-transcripts.md",
+        "references/end-to-end-workflow.md",
+    ):
+        if reference not in skill_text:
+            errors.append(f"SKILL.md 未链接参考文件: {reference}")
+
+    public_docs = [
+        README,
+        README_EN,
+        SKILL_FILE,
+        SKILL_DIR / "references" / "yt-dlp-and-transcripts.md",
+        SKILL_DIR / "references" / "end-to-end-workflow.md",
+    ]
+    for document in public_docs:
+        text = document.read_text(encoding="utf-8") if document.is_file() else ""
+        for target in re.findall(r"\[[^\]]+\]\(([^)]+)\)", text):
+            clean_target = target.split("#", 1)[0]
+            if not clean_target or clean_target.startswith(
+                ("http://", "https://", "mailto:", "#")
+            ):
+                continue
+            linked = (document.parent / clean_target).resolve()
+            if not linked.exists():
+                errors.append(
+                    f"{document.relative_to(ROOT)} 链接不存在: {target}"
+                )
+
     readme_text = README.read_text(encoding="utf-8") if README.is_file() else ""
     for readme in (README, README_EN):
         text = readme.read_text(encoding="utf-8") if readme.is_file() else ""
@@ -77,18 +109,18 @@ def main():
     if "~/.codex/skills" not in readme_text:
         errors.append("README 缺少 Codex 默认 Skill 安装目录")
 
-    if RENDERER.is_file():
-        try:
-            compile(RENDERER.read_text(encoding="utf-8"), str(RENDERER), "exec")
-        except SyntaxError as exc:
-            errors.append(f"渲染脚本语法错误: {exc}")
+    for script in (RENDERER, ENV_CHECK):
+        if script.is_file():
+            try:
+                compile(script.read_text(encoding="utf-8"), str(script), "exec")
+            except SyntaxError as exc:
+                errors.append(f"脚本语法错误 {script.relative_to(ROOT)}: {exc}")
 
     public_text_files = [
-        README,
-        README_EN,
-        SKILL_FILE,
+        *public_docs,
         OPENAI_YAML,
         RENDERER,
+        ENV_CHECK,
         PLUGIN,
     ]
     for path in public_text_files:

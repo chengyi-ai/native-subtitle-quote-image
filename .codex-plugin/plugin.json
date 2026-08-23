@@ -1,7 +1,7 @@
 {
   "name": "native-subtitle-quote-image",
-  "version": "1.1.0",
-  "description": "把带画面内嵌字幕的视频精确取帧并拼成 3:4 社交长图。",
+  "version": "1.2.0",
+  "description": "把本地或在线视频中的烧录字幕经过选题、精确取帧、拼图和质检，制作成 3:4 社交长图。",
   "author": {
     "name": "程意",
     "url": "https://github.com/chengyi-ai"
@@ -14,14 +14,14 @@
   "interface": {
     "displayName": "原生字幕拼图",
     "shortDescription": "精确截取视频内嵌字幕并生成 3:4 社交长图",
-    "longDescription": "保留原视频画面与烧录字幕，按时间点精确取帧，生成一张主画面加多条字幕画面的竖版拼图、时间点清单和总览图。",
+    "longDescription": "从本地视频或用户有权处理的在线视频建立文字时间轴，选择主题并回到烧录字幕的真实画面精确取帧，生成一张主画面加多条字幕画面的竖版拼图、时间点清单和总览图，并完成逐张质检。",
     "developerName": "程意",
     "category": "Creativity",
     "capabilities": ["Media", "Write"],
     "websiteURL": "https://github.com/chengyi-ai/native-subtitle-quote-image",
     "defaultPrompt": [
-      "把这个带内嵌字幕的视频做成 3:4 原生字幕拼图。",
-      "先预览字幕区域，再按时间点渲染一组金句长图。"
+      "把这个带内嵌字幕的视频或链接做成 3:4 原生字幕拼图。",
+      "先检查来源、字幕类型和环境，再选题、精确取帧、渲染并逐张质检。"
     ]
   }
 }

@@ -243,6 +243,36 @@ def build_sample_times(start, end, interval, max_frames):
     return [start + index * interval for index in range(count)]
 
 
+def build_focus_times(values, around, duration, max_frames):
+    """围绕文字稿给出的时间点生成前、中、后三帧候选。"""
+    if not values:
+        raise SystemExit("--time 至少需要一个时间点")
+    around = validate_time(around, "--around")
+    if around == 0:
+        raise SystemExit("--around 必须大于 0")
+    decode_margin = min(0.5, duration / 10)
+    latest_decodable = max(0.0, duration - decode_margin)
+    times = []
+    for index, value in enumerate(values):
+        center = validate_time(value, f"--time[{index}]")
+        if center > latest_decodable:
+            raise SystemExit(
+                f"--time[{index}]={center:.2f}s 超出可取帧范围 "
+                f"0–{latest_decodable:.2f}s"
+            )
+        times.extend(
+            max(0.0, min(latest_decodable, center + offset))
+            for offset in (-around, 0.0, around)
+        )
+    unique = sorted({round(value, 3) for value in times})
+    if len(unique) > max_frames:
+        raise SystemExit(
+            f"候选帧数量为 {len(unique)}，超过上限 {max_frames}；"
+            "请减少 --time 数量或提高 --max-frames"
+        )
+    return unique
+
+
 def sample_contact_sheet(video, times, out_path, video_size, columns, thumb_width):
     frame_width, frame_height = video_size
     thumb_height = max(1, round(thumb_width * frame_height / frame_width))
@@ -303,11 +333,20 @@ def command_sample(args):
     width, height, duration = video_metadata(video)
     decode_margin = min(0.5, duration / 10)
     latest_decodable = max(0.0, duration - decode_margin)
-    end = latest_decodable if args.end is None else validate_time(args.end, "--end")
-    if end > duration + 0.05:
-        raise SystemExit(f"--end 超出视频时长 {duration:.2f}s")
-    end = min(end, latest_decodable)
-    times = build_sample_times(args.start, end, args.interval, args.max_frames)
+    if args.times:
+        if args.start != 0.0 or args.end is not None or args.interval is not None:
+            raise SystemExit(
+                "使用 --time 时不要同时传 --start、--end 或 --interval"
+            )
+        times = build_focus_times(
+            args.times, args.around, duration, args.max_frames
+        )
+    else:
+        end = latest_decodable if args.end is None else validate_time(args.end, "--end")
+        if end > duration + 0.05:
+            raise SystemExit(f"--end 超出视频时长 {duration:.2f}s")
+        end = min(end, latest_decodable)
+        times = build_sample_times(args.start, end, args.interval, args.max_frames)
     if args.columns <= 0:
         raise SystemExit("--columns 必须为正整数")
     if args.thumb_width < 120:
@@ -387,6 +426,20 @@ def main():
     sample.add_argument("--start", type=float, default=0.0)
     sample.add_argument("--end", type=float)
     sample.add_argument("--interval", type=float)
+    sample.add_argument(
+        "-t",
+        "--time",
+        dest="times",
+        action="append",
+        type=float,
+        help="文字稿候选时间点，可重复传入；每个时间点生成前、中、后三帧",
+    )
+    sample.add_argument(
+        "--around",
+        type=float,
+        default=0.8,
+        help="配合 --time 使用的前后偏移秒数（默认 0.8）",
+    )
     sample.add_argument("--max-frames", type=int, default=48)
     sample.add_argument("--columns", type=int, default=4)
     sample.add_argument("--thumb-width", type=int, default=320)

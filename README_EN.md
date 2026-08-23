@@ -23,6 +23,7 @@
 
   <p>
     <a href="#what-it-does">What it does</a> ·
+    <a href="#complete-workflow">Workflow</a> ·
     <a href="#demo">Demo</a> ·
     <a href="#install">Install</a> ·
     <a href="#use">Use</a> ·
@@ -36,7 +37,7 @@
 
 ## What it does
 
-This open Agent Skill extracts exact frames from videos with **burned-in subtitles**. It combines one main frame with several native subtitle strips into a 3:4 image designed for social publishing.
+This open Agent Skill starts with a local video or an online video the user has the right to process. It handles source acquisition, transcript-assisted discovery, topic and quote selection, exact frame calibration, cropping, collage rendering, and per-image QA for videos with **burned-in subtitles**.
 
 It does not run OCR and redraw the words, translate the subtitles, or place new text over the video. Every frame and subtitle in the result comes from the source video.
 
@@ -44,8 +45,55 @@ The repository includes:
 
 - a standalone Skill for compatible agents;
 - a Codex-compatible plugin package;
+- a URL workflow covering `yt-dlp`, Deno/Node, and auxiliary subtitle tracks;
+- a transcript-to-topic method that always returns to real video frames;
 - candidate-frame contact sheets with timestamps;
-- local tools for subtitle-band previews, 3:4 JPGs, timestamp manifests, and final contact sheets.
+- local tools for focused frame candidates, subtitle-band previews, 3:4 JPGs, timestamp manifests, and final contact sheets;
+- a read-only environment checker for local and URL modes.
+
+## Complete workflow
+
+```text
+Local video / YouTube URL
+        ↓
+yt-dlp obtains video, metadata, and auxiliary subtitle tracks (URL mode)
+        ↓
+Confirm that subtitles are actually burned into the pixels
+        ↓
+Subtitle track or Whisper builds a timestamped content index (optional)
+        ↓
+Video analysis / topic / writing Skills propose themes (optional)
+        ↓
+Return to real frames and calibrate stable subtitle timestamps
+        ↓
+Band preview → manifest → 3:4 render → per-image QA
+```
+
+The central rule is: **subtitle tracks and speech recognition help with understanding and navigation; the words in every final image must come from the video pixels.**
+
+Three modes are supported:
+
+1. **Local finished-video mode**: the video is already available and contains burned-in subtitles. `yt-dlp` and Whisper are unnecessary.
+2. **Full URL mode**: use `yt-dlp` to obtain a video and timeline the user has the right to process, then verify burned-in subtitles and create the images.
+3. **Content-production mode**: read the video, select topics, write an article or post, and create native-subtitle visuals. Upstream content Skills help with analysis; this Skill remains the source of truth for final frames and QA.
+
+### Component layers
+
+| Component | Local mode | URL mode | Role |
+|---|---:|---:|---|
+| `native-subtitle-quote-image` | Required | Required | Frame selection, cropping, collage rendering, and final QA |
+| Python 3.10+ | Required | Required | Runs the Skill scripts |
+| Pillow | Required | Required | Cropping, collage composition, and JPG export |
+| `imageio-ffmpeg` or FFmpeg | Required | Required | Video decoding and exact frame extraction |
+| `yt-dlp` | Not needed | Required | Online video, metadata, and subtitle-track acquisition |
+| Deno, or explicitly enabled Node.js | Not needed | Required for full YouTube support | Full YouTube format extraction |
+| Whisper / speech-to-text Skill | Optional | Optional | Builds a timeline when no subtitle track is available |
+| Topic, writing, or video-understanding Skill | Optional | Optional | Proposes themes and produces companion content from the transcript |
+
+Detailed implementation guides (Chinese; the commands are language-independent):
+
+- [URL acquisition, yt-dlp, Deno/Node, and timelines](skills/native-subtitle-quote-image/references/yt-dlp-and-transcripts.md)
+- [End-to-end topic selection, frame calibration, rendering, and QA](skills/native-subtitle-quote-image/references/end-to-end-workflow.md)
 
 ## Demo
 
@@ -85,6 +133,24 @@ cp -R native-subtitle-quote-image/skills/native-subtitle-quote-image ~/.codex/sk
 
 Open a new Codex task, then invoke `$native-subtitle-quote-image`.
 
+### Install core dependencies
+
+```bash
+python3 -m pip install -r skills/native-subtitle-quote-image/requirements.txt
+python3 skills/native-subtitle-quote-image/scripts/check_environment.py
+```
+
+### URL mode
+
+URL mode also needs `yt-dlp` and a JavaScript runtime. yt-dlp currently recommends Deno. An existing Node.js installation also works when `--js-runtimes node` is added to yt-dlp commands.
+
+```bash
+python3 -m pip install -U "yt-dlp[default]"
+python3 skills/native-subtitle-quote-image/scripts/check_environment.py --url-mode
+```
+
+The checker never installs or changes software. When something is missing, the agent should explain why it is needed and ask before installing it.
+
 ### Other agents
 
 The Skill uses the open Agent Skills directory format. Copy `skills/native-subtitle-quote-image/` into the Skills directory supported by your agent and follow that agent's activation instructions.
@@ -97,6 +163,18 @@ Prompt your agent with:
 Use $native-subtitle-quote-image to turn this video with burned-in subtitles into native subtitle quote images.
 ```
 
+For a URL:
+
+```text
+Use $native-subtitle-quote-image with this YouTube URL. Check download rights and burned-in subtitles first, then select three useful themes, create native subtitle collages, and inspect every image.
+```
+
+For a content pipeline:
+
+```text
+Use the timestamped transcript to choose topics and draft the article, then use $native-subtitle-quote-image to create one original-subtitle visual for each core point. Do not draw article copy into the images.
+```
+
 The workflow checks the subtitle band, selects stable subtitle frames, and delivers:
 
 - 3:4 JPG files;
@@ -104,12 +182,6 @@ The workflow checks the subtitle band, selects stable subtitle frames, and deliv
 - `final_contact_sheet.jpg`, the output overview.
 
 ### Local CLI
-
-Requirements: Python 3.10+, Pillow, and either FFmpeg or `imageio-ffmpeg`:
-
-```bash
-python3 -m pip install -r skills/native-subtitle-quote-image/requirements.txt
-```
 
 Generate a timestamped candidate-frame sheet before choosing exact frames:
 
@@ -119,6 +191,14 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py sam
 ```
 
 When `--start`, `--end`, and `--interval` are omitted, the CLI samples up to 24 frames across the full video. Use `band` to preview the crop and `render` to create the final set. Run `--help` for all options.
+
+When a transcript already provides candidate timestamps, generate before/middle/after frames around each point:
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py sample VIDEO \
+  -t 61.2 -t 68.9 -t 74.5 -t 82.0 -t 88.4 \
+  --around 0.8 --out focused-candidates.jpg
+```
 
 Existing images are protected by default. Add `--overwrite` only when replacing the current output is intentional.
 
@@ -143,6 +223,7 @@ Use footage you created, licensed material, or public video that clearly permits
 ```bash
 python3 scripts/validate_repo.py
 python3 -m unittest discover -s tests -v
+python3 skills/native-subtitle-quote-image/scripts/check_environment.py
 python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py --help
 ```
 

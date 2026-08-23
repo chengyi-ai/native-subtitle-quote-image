@@ -18,6 +18,13 @@ SCRIPT = (
     / "scripts"
     / "native_subtitle_stitch.py"
 )
+ENV_SCRIPT = (
+    ROOT
+    / "skills"
+    / "native-subtitle-quote-image"
+    / "scripts"
+    / "check_environment.py"
+)
 SPEC = importlib.util.spec_from_file_location("native_subtitle_stitch", SCRIPT)
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
@@ -37,6 +44,28 @@ class HelperTests(unittest.TestCase):
     def test_sample_times_enforce_frame_cap(self):
         with self.assertRaisesRegex(SystemExit, "超过上限"):
             MODULE.build_sample_times(0, 100, 1, 48)
+
+    def test_focus_times_add_before_middle_and_after(self):
+        times = MODULE.build_focus_times([1, 3], 0.5, 5, 48)
+        self.assertEqual(times, [0.5, 1.0, 1.5, 2.5, 3.0, 3.5])
+
+    def test_focus_times_clip_and_deduplicate_edges(self):
+        times = MODULE.build_focus_times([0, 2.7], 0.5, 3, 48)
+        self.assertEqual(times, [0.0, 0.5, 2.2, 2.7])
+
+    def test_environment_check_local_mode_is_machine_readable(self):
+        proc = subprocess.run(
+            [sys.executable, str(ENV_SCRIPT), "--json"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        payload = json.loads(proc.stdout)
+        self.assertEqual(payload["mode"], "local")
+        self.assertTrue(payload["ok"])
+        components = {item["component"] for item in payload["components"]}
+        self.assertIn("Python 3.10+", components)
+        self.assertIn("yt-dlp", components)
 
     def test_render_one_has_requested_dimensions(self):
         frame = Image.new("RGB", (640, 360), "#336699")
@@ -142,6 +171,28 @@ class CliIntegrationTests(unittest.TestCase):
                 text=True,
             )
             self.assertTrue(default_sample.is_file())
+
+            focused_sample = tmp_path / "focused-candidate.jpg"
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "sample",
+                    str(video),
+                    "-t",
+                    "1",
+                    "-t",
+                    "2",
+                    "--around",
+                    "0.2",
+                    "--out",
+                    str(focused_sample),
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertTrue(focused_sample.is_file())
 
             band = tmp_path / "band.jpg"
             subprocess.run(

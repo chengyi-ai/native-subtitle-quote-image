@@ -1,4 +1,4 @@
 interface:
   display_name: "原生字幕拼图"
-  short_description: "保留视频画面内嵌字幕，精确取帧并生成固定3:4社交长图"
-  default_prompt: "使用 $native-subtitle-quote-image 把这个自带字幕的视频做成原生字幕拼图。"
+  short_description: "读取带烧录字幕的视频，选句、精确取帧并完成3:4拼图质检"
+  default_prompt: "使用 $native-subtitle-quote-image 把这个视频或链接做成原生字幕拼图；先检查来源、字幕类型和环境，再选句、取帧、渲染并质检。"

@@ -37,4 +37,7 @@ jobs:
         run: python -m unittest discover -s tests -v
 
       - name: Check CLI
-        run: python skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py --help
+        run: |
+          python skills/native-subtitle-quote-image/scripts/check_environment.py
+          python skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py --help
+          python skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py sample --help
