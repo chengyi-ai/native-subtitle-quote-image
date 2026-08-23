@@ -13,6 +13,7 @@ SKILL_FILE = SKILL_DIR / "SKILL.md"
 OPENAI_YAML = SKILL_DIR / "agents" / "openai.yaml"
 RENDERER = SKILL_DIR / "scripts" / "native_subtitle_stitch.py"
 README = ROOT / "README.md"
+README_EN = ROOT / "README_EN.md"
 PLUGIN = ROOT / ".codex-plugin" / "plugin.json"
 EXPECTED_NAME = "native-subtitle-quote-image"
 EXPECTED_VERSION = "1.1.0"
@@ -23,6 +24,8 @@ def main():
     required = [
         ROOT / "LICENSE",
         README,
+        README_EN,
+        ROOT / "assets" / "native-subtitle-quote-image-icon.png",
         PLUGIN,
         SKILL_FILE,
         OPENAI_YAML,
@@ -64,11 +67,13 @@ def main():
         errors.append("agents/openai.yaml default_prompt 未引用当前 Skill")
 
     readme_text = README.read_text(encoding="utf-8") if README.is_file() else ""
-    for source in re.findall(r'<img\s+[^>]*src="([^"]+)"', readme_text):
-        if source.startswith(("http://", "https://")):
-            continue
-        if not (ROOT / source).is_file():
-            errors.append(f"README 图片不存在: {source}")
+    for readme in (README, README_EN):
+        text = readme.read_text(encoding="utf-8") if readme.is_file() else ""
+        for source in re.findall(r'<img\s+[^>]*src="([^"]+)"', text):
+            if source.startswith(("http://", "https://")):
+                continue
+            if not (ROOT / source).is_file():
+                errors.append(f"{readme.name} 图片不存在: {source}")
     if "~/.codex/skills" not in readme_text:
         errors.append("README 缺少 Codex 默认 Skill 安装目录")
 
@@ -78,7 +83,14 @@ def main():
         except SyntaxError as exc:
             errors.append(f"渲染脚本语法错误: {exc}")
 
-    public_text_files = [README, SKILL_FILE, OPENAI_YAML, RENDERER, PLUGIN]
+    public_text_files = [
+        README,
+        README_EN,
+        SKILL_FILE,
+        OPENAI_YAML,
+        RENDERER,
+        PLUGIN,
+    ]
     for path in public_text_files:
         if path.is_file() and "/Users/" in path.read_text(encoding="utf-8"):
             errors.append(f"包含本机绝对路径: {path.relative_to(ROOT)}")
