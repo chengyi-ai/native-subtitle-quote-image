@@ -425,7 +425,7 @@ GitHub Actions runs these checks on Python 3.10 and 3.13 for every push and pull
 
 ## Feedback and contributing
 
-Open an [issue](https://github.com/chengyi-ai/native-subtitle-quote-image/issues) for bugs or ideas, or reach the author on social media. New issues are assessed by an agent; feasible requests are implemented, tested and opened as PRs by the agent, then reviewed and merged by a maintainer before an automatic release. See the [agent workflow guide](docs/agent-workflow.md) (Chinese).
+Open an [issue](https://github.com/chengyi-ai/native-subtitle-quote-image/issues) for bugs or ideas (for rendering problems, attach a screenshot of the page that went wrong), or reach the author on social media. New issues are assessed by an agent; feasible requests are implemented, tested and opened as PRs by the agent, then reviewed and merged by a maintainer before an automatic release. See the [agent workflow guide](docs/agent-workflow.md) (Chinese).
 
 ## Star History
 

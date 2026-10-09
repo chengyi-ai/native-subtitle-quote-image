@@ -426,7 +426,7 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 
 ## 反馈与贡献
 
-欢迎在 [Issues](https://github.com/chengyi-ai/native-subtitle-quote-image/issues) 提问题或建议，也可以在社交媒体上直接找作者反馈。新 issue 会由 Agent 自动评估可行性，符合条件的需求由 Agent 编码、测试并提交 PR，维护者审查合并后自动发版。完整流程见 [Agent 工作流说明](docs/agent-workflow.md)。
+欢迎在 [Issues](https://github.com/chengyi-ai/native-subtitle-quote-image/issues) 提问题或建议，渲染问题请附上出问题那一页的截图；也可以在社交媒体上直接找作者反馈。新 issue 会由 Agent 自动评估可行性，符合条件的需求由 Agent 编码、测试并提交 PR，维护者审查合并后自动发版。完整流程见 [Agent 工作流说明](docs/agent-workflow.md)。
 
 ## Star History
 

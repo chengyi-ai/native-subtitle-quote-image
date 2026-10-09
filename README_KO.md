@@ -418,7 +418,7 @@ GitHub Actions가 push와 pull request마다 Python 3.10과 3.13에서 검증합
 
 ## 피드백과 기여
 
-버그나 제안은 [Issues](https://github.com/chengyi-ai/native-subtitle-quote-image/issues)에 남기거나 소셜 미디어로 작성자에게 알려 주세요. 새 issue는 에이전트가 실현 가능성을 먼저 평가하고, 조건을 충족하면 에이전트가 코드 작성·테스트 후 PR을 올립니다. 메인테이너가 검토해 병합하면 자동으로 배포됩니다. 전체 흐름은 [에이전트 워크플로 안내](docs/agent-workflow.md)(중국어)를 참고하세요.
+버그나 제안은 [Issues](https://github.com/chengyi-ai/native-subtitle-quote-image/issues)에 남기거나(렌더링 문제라면 문제가 생긴 페이지의 스크린샷을 첨부해 주세요) 소셜 미디어로 작성자에게 알려 주세요. 새 issue는 에이전트가 실현 가능성을 먼저 평가하고, 조건을 충족하면 에이전트가 코드 작성·테스트 후 PR을 올립니다. 메인테이너가 검토해 병합하면 자동으로 배포됩니다. 전체 흐름은 [에이전트 워크플로 안내](docs/agent-workflow.md)(중국어)를 참고하세요.
 
 ## Star History
 
