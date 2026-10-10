@@ -729,6 +729,18 @@ def refuse_existing(paths, overwrite):
         )
 
 
+FAILURE_REPORT = "渲染失败报告.json"
+
+
+def is_valid_image(path):
+    try:
+        with Image.open(path) as image:
+            image.verify()
+    except Exception:
+        return False
+    return True
+
+
 def command_band(args):
     video = input_file(args.video, "视频")
     _, _, duration = video_metadata(video)
@@ -814,27 +826,63 @@ def command_render(args):
     outputs = [out_dir / f"{index:02d}_{title}.jpg" for index, title, _ in jobs]
     manifest_target = out_dir / "原生字幕时间点.json"
     contact_target = out_dir / "final_contact_sheet.jpg"
-    guarded = [*outputs, contact_target]
-    if manifest_path != manifest_target:
-        guarded.append(manifest_target)
-    refuse_existing(guarded, args.overwrite)
+    report_target = out_dir / FAILURE_REPORT
+    if args.resume:
+        # 续跑只补缺失或损坏的卡；已有的有效图保留，总览图与时间点文件重新生成。
+        pending = [
+            (job, path) for job, path in zip(jobs, outputs) if not is_valid_image(path)
+        ]
+        skipped = len(jobs) - len(pending)
+        if skipped:
+            print(f"续跑: 跳过 {skipped} 张已完成的图")
+        refuse_existing([path for _, path in pending], args.overwrite)
+    else:
+        pending = list(zip(jobs, outputs))
+        guarded = [*outputs, contact_target]
+        if manifest_path != manifest_target:
+            guarded.append(manifest_target)
+        refuse_existing(guarded, args.overwrite)
 
-    for (_, _, times), out_path in zip(jobs, outputs):
-        render_one(
-            video,
-            times,
-            out_path,
-            args.aspect,
-            args.width,
-            args.band_top,
-            args.band_bottom,
-            args.hero_fraction,
-            args.layout,
-            args.fit or "crop",
-            0.5 if args.crop_center is None else args.crop_center,
-            check_duplicates=not args.allow_duplicate_frames,
+    keep_going = args.keep_going or args.resume
+    failures = []
+    for (index, title, times), out_path in pending:
+        try:
+            render_one(
+                video,
+                times,
+                out_path,
+                args.aspect,
+                args.width,
+                args.band_top,
+                args.band_bottom,
+                args.hero_fraction,
+                args.layout,
+                args.fit or "crop",
+                0.5 if args.crop_center is None else args.crop_center,
+                check_duplicates=not args.allow_duplicate_frames,
+            )
+        except (Exception, SystemExit) as exc:
+            if not keep_going:
+                raise
+            out_path.unlink(missing_ok=True)
+            failures.append({
+                "index": index,
+                "title": title,
+                "times": times,
+                "reason": str(exc) or type(exc).__name__,
+            })
+            print(f"失败: 第 {index} 张（{title}）时间点 {times}: {failures[-1]['reason']}")
+
+    if failures:
+        report_target.write_text(
+            json.dumps({"failures": failures}, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
         )
+        print(f"失败 {len(failures)}/{len(pending)} 张，清单: {report_target}")
+        print("修正 manifest 后加 --resume 只重渲失败的卡；总览图未生成。")
+        raise SystemExit(1)
 
+    report_target.unlink(missing_ok=True)
     if manifest_path != manifest_target:
         shutil.copyfile(manifest_path, manifest_target)
     contact_sheet(outputs, contact_target)
@@ -950,6 +998,16 @@ def main():
         help="跳过重复画面检查（默认遇到静态封面或重复字幕条会中止）",
     )
     render.add_argument("--overwrite", action="store_true")
+    render.add_argument(
+        "--keep-going",
+        action="store_true",
+        help="单张失败不中断整批，结束时输出失败清单并写入 渲染失败报告.json（有失败则退出码非零）",
+    )
+    render.add_argument(
+        "--resume",
+        action="store_true",
+        help="续跑：跳过已存在且有效的图，只渲染缺失或失败的卡（隐含 --keep-going）",
+    )
     render.set_defaults(func=command_render)
 
     scripted = sub.add_parser(
