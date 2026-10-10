@@ -736,6 +736,9 @@ def is_valid_image(path):
     try:
         with Image.open(path) as image:
             image.verify()
+        # verify() 不解码像素，查不出被截断的 JPEG；再完整解码一次。
+        with Image.open(path) as image:
+            image.load()
     except Exception:
         return False
     return True
@@ -886,13 +889,13 @@ def command_render(args):
     report_target = out_dir / FAILURE_REPORT
     if args.resume:
         # 续跑只补缺失或损坏的卡；已有的有效图保留，总览图与时间点文件重新生成。
+        # 待补的卡要么不存在、要么已确认损坏，不是成品，无需 --overwrite 即可重渲。
         pending = [
             (job, path) for job, path in zip(jobs, outputs) if not is_valid_image(path)
         ]
         skipped = len(jobs) - len(pending)
         if skipped:
             print(f"续跑: 跳过 {skipped} 张已完成的图")
-        refuse_existing([path for _, path in pending], args.overwrite)
     else:
         pending = list(zip(jobs, outputs))
         guarded = [*outputs, contact_target]

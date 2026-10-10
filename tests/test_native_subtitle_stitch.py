@@ -955,9 +955,20 @@ class KeepGoingResumeTests(unittest.TestCase):
     def test_resume_rerenders_corrupt_output(self):
         self.run_render()
         (self.out_dir / "03_丙.jpg").write_bytes(b"broken")
-        code, rendered = self.run_render(resume=True, overwrite=True)
+        code, rendered = self.run_render(resume=True)
         self.assertEqual(code, 0)
         self.assertEqual(rendered, ["03_丙.jpg"])
+
+    def test_resume_rerenders_truncated_jpeg(self):
+        self.run_render()
+        card = self.out_dir / "02_乙.jpg"
+        Image.effect_noise((200, 200), 64).convert("RGB").save(card, quality=95)
+        data = card.read_bytes()
+        card.write_bytes(data[: len(data) // 2])
+        self.assertFalse(MODULE.is_valid_image(card))
+        code, rendered = self.run_render(resume=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(rendered, ["02_乙.jpg"])
 
 
 if __name__ == "__main__":
