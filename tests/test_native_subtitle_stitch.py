@@ -370,6 +370,96 @@ class NaturalGeometryTests(unittest.TestCase):
                 self.assertNotIn("Traceback", proc.stderr)
 
 
+class SixLineCardTests(unittest.TestCase):
+    def test_geometry_and_rendered_strips(self):
+        self.assertEqual(MODULE.six_line_geometry(1080, 1440), (870, 114, 870 / 1440))
+        colors = [(30 + i * 25, 50 + i * 20, 70 + i * 15) for i in range(6)]
+        frames = [Image.new("RGB", (1080, 870), color) for color in colors]
+        lines = [{"t": i, "text": f"Line {i}"} for i in range(6)]
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            MODULE, "grab_frame", side_effect=frames
+        ), mock.patch.object(MODULE, "draw_scripted_subtitle") as draw_text:
+            out = Path(tmp) / "six-line.jpg"
+            MODULE.scripted_render_one(
+                "unused", lines, out, (3, 4), 1080, 0.60, None, None, None,
+                six_line_card=True,
+            )
+            calls = draw_text.call_args_list
+            self.assertEqual(len(calls), 6)
+            self.assertEqual(calls[0].args[0].size, (1080, 870))
+            self.assertTrue(all(call.args[0].size == (1080, 114) for call in calls[1:]))
+            centers = [calls[0].args[2]] + [
+                870 + i * 114 + call.args[2]
+                for i, call in enumerate(calls[1:])
+            ]
+            self.assertEqual(centers, [813, 927, 1041, 1155, 1269, 1383])
+            self.assertTrue(all(call.args[4] == 63 for call in calls))
+            with Image.open(out) as rendered:
+                self.assertEqual(rendered.size, (1080, 1440))
+                # Distinct solid-color frames fill every row, including each seam.
+                for i, y in enumerate((869, 870, 983, 984, 1097, 1098, 1211, 1212, 1325, 1326, 1439)):
+                    expected = colors[0 if y < 870 else 1 + (y - 870) // 114]
+                    actual = rendered.getpixel((540, y))
+                    self.assertTrue(all(abs(a - e) <= 8 for a, e in zip(actual, expected)),
+                                    (i, y, actual, expected))
+
+    def test_invalid_cli_combinations_fail_before_video_io(self):
+        for options, message in [
+            (["--layout", "natural"], "只支持固定 3:4"),
+            (["--hero-fraction", "0.6"], "不接受 --hero-fraction"),
+            (["--aspect", "16:9"], "只支持固定 3:4"),
+        ]:
+            with self.subTest(options=options):
+                proc = subprocess.run(
+                    [sys.executable, str(SCRIPT), "render-script", "unused.mp4",
+                     "--script", "unused.json", "--out", "unused.jpg",
+                     "--six-line-card", *options],
+                    capture_output=True, text=True,
+                )
+                self.assertNotEqual(proc.returncode, 0)
+                self.assertIn(message, proc.stderr)
+                self.assertNotIn("Traceback", proc.stderr)
+
+    def test_requires_exactly_six_lines(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            video = Path(tmp) / "unused.mp4"
+            video.touch()
+            script = Path(tmp) / "five.json"
+            script.write_text(json.dumps({"lines": [
+                {"t": i, "text": f"Line {i}"} for i in range(5)
+            ]}), encoding="utf-8")
+            args = mock.Mock(video=str(video), script=str(script), six_line_card=True)
+            with mock.patch.object(MODULE, "video_metadata", return_value=(1080, 870, 10)):
+                with self.assertRaisesRegex(SystemExit, "恰好 6 句"):
+                    MODULE.command_render_script(args)
+
+    def test_long_line_shrinks_before_reaching_safe_width(self):
+        class MeasuredDraw:
+            rendered = None
+
+            def textbbox(self, position, text, font, stroke_width):
+                return (0, 0, round(len(text) * font * 0.62) + 2 * stroke_width, font)
+
+            def text(self, position, text, font, **kwargs):
+                self.rendered = (position, text, font, kwargs)
+
+        measured = MeasuredDraw()
+        image = Image.new("RGB", (1080, 114), "white")
+        with mock.patch.object(MODULE.ImageDraw, "Draw", return_value=measured), mock.patch.object(
+            MODULE, "load_subtitle_font", side_effect=lambda path, size, text: size
+        ):
+            MODULE.draw_scripted_subtitle(image, "M" * 28, 57, None, 63, round(1080 * 0.92))
+        position, text, chosen_size, kwargs = measured.rendered
+        stroke = kwargs["stroke_width"]
+        width = measured.textbbox((0, 0), text, chosen_size, stroke)[2]
+        self.assertLess(chosen_size, 63)
+        self.assertLessEqual(width, round(1080 * 0.92))
+        self.assertGreaterEqual(position[0], 0)
+        self.assertLessEqual(position[0] + width, image.width)
+        self.assertGreaterEqual(position[1], 0)
+        self.assertLessEqual(position[1] + chosen_size, image.height)
+
+
 def subtitle_band(width, height, left, right, background="#5a5a5a"):
     """灰底上画白色黑描边的竖笔画，模拟烧录字幕。"""
     band = Image.new("RGB", (width, height), background)
@@ -726,3 +816,4 @@ class CliIntegrationTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
