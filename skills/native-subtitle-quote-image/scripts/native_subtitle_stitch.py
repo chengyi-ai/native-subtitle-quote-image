@@ -343,6 +343,16 @@ def choose_hero_fraction(strip_count, requested=None):
     return min(0.82, max(0.48, 1.0 - strip_count * 0.075))
 
 
+def six_line_geometry(out_width, out_height):
+    """Return the fixed six-line card's hero and strip heights."""
+    strip_height = max(1, round(out_width * 114 / 1080))
+    hero_height = out_height - 5 * strip_height
+    hero_fraction = hero_height / out_height
+    if not 0.25 <= hero_fraction <= 0.85:
+        raise SystemExit("六句卡主画面高度比例必须在 0.25–0.85 之间")
+    return hero_height, strip_height, hero_fraction
+
+
 def scale_to_width(image, width):
     """只等比缩放；同宽时保留原始像素，不把裁切区域拉回源高度。"""
     if width == image.width:
@@ -535,12 +545,8 @@ def scripted_render_one(
     if six_line_card:
         # 1080x1440: 870px hero + five contiguous 114px strips.
         # Keep the strip pitch proportional when --width changes.
-        strip_height = max(1, round(out_width * 114 / 1080))
-        hero_height = out_height - strip_height * strip_count
-        if hero_height <= strip_height:
-            raise SystemExit("六句卡布局没有足够空间放置主画面；请使用 3:4 比例")
+        hero_height, strip_height, hero_fraction = six_line_geometry(out_width, out_height)
         strip_heights = [strip_height] * strip_count
-        hero_fraction = hero_height / out_height
         base_font = font_size or max(24, round(out_width * 0.0587))
     else:
         hero_fraction = choose_hero_fraction(strip_count, hero_fraction)
@@ -848,12 +854,8 @@ def command_render_script(args):
         ) from None
     lines = normalize_script_lines(data, duration)
     if args.six_line_card:
-        if args.layout != "fixed" or not math.isclose(args.aspect[0] / args.aspect[1], 0.75):
-            raise SystemExit("--six-line-card 只支持固定 3:4 布局")
         if len(lines) != 6:
             raise SystemExit("--six-line-card 需要恰好 6 句已核对台词")
-        if args.hero_fraction is not None:
-            raise SystemExit("--six-line-card 不接受 --hero-fraction；主画面高度由字幕条计算")
     out_path = Path(args.out).expanduser().resolve()
     refuse_existing([out_path], args.overwrite)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1013,6 +1015,11 @@ def main():
             raise SystemExit("--crop-center 只用于 --fit crop")
     if hasattr(args, "aspect") and args.aspect is None:
         args.aspect = parse_aspect("3:4")
+    if getattr(args, "six_line_card", False):
+        if args.layout != "fixed" or not math.isclose(args.aspect[0] / args.aspect[1], 0.75):
+            raise SystemExit("--six-line-card 只支持固定 3:4 布局")
+        if args.hero_fraction is not None:
+            raise SystemExit("--six-line-card 不接受 --hero-fraction；主画面高度由字幕条计算")
     if hasattr(args, "band_center"):
         if args.band_center is None:
             args.band_center = 0.60 if args.six_line_card else 0.88
@@ -1031,3 +1038,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
