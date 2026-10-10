@@ -760,6 +760,63 @@ def command_band(args):
     print(f"字幕区域预览: {out_path} (y={y0}-{y1})")
 
 
+LOW_RES_WARN_HEIGHT = 720
+
+
+def decode_errors(path, seconds):
+    """解码前 seconds 秒，返回 FFmpeg 报告的错误行（空列表表示干净）。"""
+    try:
+        proc = subprocess.run(
+            [FFMPEG, "-hide_banner", "-v", "error", "-t", f"{seconds:g}",
+             "-i", str(path), "-map", "0:v:0", "-f", "null", "-"],
+            capture_output=True,
+        )
+    except FileNotFoundError:
+        raise SystemExit(f"找不到 FFmpeg 可执行文件: {FFMPEG}") from None
+    stderr = proc.stderr.decode("utf-8", errors="replace")
+    lines = [line.strip() for line in stderr.splitlines() if line.strip()]
+    if proc.returncode != 0 and not lines:
+        lines = [f"FFmpeg 退出码 {proc.returncode}"]
+    return lines
+
+
+def command_check_source(args):
+    video = input_file(args.video, "视频")
+    seconds = validate_time(args.seconds, "--seconds")
+    if seconds <= 0:
+        raise SystemExit("--seconds 必须大于 0")
+    if args.min_height is not None and args.min_height <= 0:
+        raise SystemExit("--min-height 必须为正整数")
+    try:
+        width, height, duration = video_metadata(video)
+    except SystemExit as exc:
+        raise SystemExit(f"源视频自检失败（无法读取元数据，文件可能已损坏）: {exc}") from None
+    print(f"源视频: {width}x{height}, 时长 {duration:.2f}s")
+
+    failed = False
+    if args.min_height is not None and height < args.min_height:
+        print(f"失败: 分辨率 {height}p 低于 --min-height {args.min_height}", file=sys.stderr)
+        failed = True
+    elif args.min_height is None and height < LOW_RES_WARN_HEIGHT:
+        print(
+            f"警告: 分辨率 {height}p 低于 {LOW_RES_WARN_HEIGHT}p，画质可能不足；"
+            "请征得用户确认，或用 --min-height 强制门槛",
+            file=sys.stderr,
+        )
+
+    errors = decode_errors(video, seconds)
+    if errors:
+        failed = True
+        print(f"失败: 解码前 {seconds:g} 秒出现错误:", file=sys.stderr)
+        for line in errors[:5]:
+            print(f"  {line}", file=sys.stderr)
+        if len(errors) > 5:
+            print(f"  …共 {len(errors)} 行", file=sys.stderr)
+    if failed:
+        raise SystemExit(1)
+    print(f"自检通过: 前 {seconds:g} 秒解码无错误")
+
+
 def command_sample(args):
     video = input_file(args.video, "视频")
     width, height, duration = video_metadata(video)
@@ -931,6 +988,14 @@ def command_render_script(args):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
+
+    check = sub.add_parser("check-source", help="下载后自检：分辨率与前 N 秒解码")
+    check.add_argument("video")
+    check.add_argument("--seconds", type=float, default=10.0,
+                       help="解码自检的秒数（默认 10）")
+    check.add_argument("--min-height", type=int,
+                       help="最低画面高度；低于则失败。默认只在低于 720 时警告")
+    check.set_defaults(func=command_check_source)
 
     sample = sub.add_parser("sample", help="生成带时间点的候选帧总览")
     sample.add_argument("video")

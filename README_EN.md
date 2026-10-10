@@ -187,6 +187,12 @@ The agent checks the source, subtitle type, and candidate frames, locks the mode
 
 You can also run the scripts without an agent. Replace `VIDEO` with your video path.
 
+**Check the source**: after download, verify resolution and decode the first 10 seconds so broken or low-res sources fail before frame extraction (without `--min-height`, below 720p only warns).
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py check-source VIDEO --min-height 720
+```
+
 **Pick frames**: build a timestamped candidate sheet instead of guessing timestamps.
 
 ```bash
@@ -308,6 +314,24 @@ Many videos carry subtitles as a switchable player track (CC). The downloaded fr
 - Interview or podcast clips with hard-coded subtitles on video platforms. These are often re-uploads, so confirm usage rights before publishing.
 
 **Still nothing?** Switch to script mode. Use the video's subtitle track or a Whisper transcript to locate timestamps, write reviewed copy into `script.json`, and run `render-script`. The output is labeled as added subtitles and never passes as the original.
+
+</details>
+
+<details>
+<summary><strong>Interviews and other multi-speaker videos</strong></summary>
+
+<br>
+
+The collage simply follows timestamp order and does not know who is speaking. Subtitle strips only show the bottom of each frame, so readers assume every line belongs to the person in the hero frame. YouTube subtitle tracks and plain Whisper transcripts carry no speaker labels either. Picking "a few consecutive lines" from a multi-speaker video therefore tends to splice the host's questions into the guest's answers, which reads as jumbled and misattributed.
+
+The Skill now handles this as follows:
+
+- It labels speakers in the transcript before picking lines, checks unclear lines against the frames, and drops lines it still can't attribute.
+- By default one image holds one speaker's lines, and the hero frame shows that speaker talking.
+- For a question-and-answer layout it asks you first, and the question and answer must be adjacent in the source. Native mode can't add speaker labels to the frames, so the delivery notes name the speaker of every line.
+- YouTube auto-captions roll, so the same line repeats and starts early. They are deduplicated before timestamps are chosen.
+
+You can say it up front: "This is a two-person interview; use only consecutive lines from the guest."
 
 </details>
 
