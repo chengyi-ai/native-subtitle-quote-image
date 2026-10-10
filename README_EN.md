@@ -310,6 +310,24 @@ Many videos carry subtitles as a switchable player track (CC). The downloaded fr
 
 </details>
 
+<details>
+<summary><strong>Interviews and other multi-speaker videos</strong></summary>
+
+<br>
+
+The collage simply follows timestamp order and does not know who is speaking. Subtitle strips only show the bottom of each frame, so readers assume every line belongs to the person in the hero frame. YouTube subtitle tracks and plain Whisper transcripts carry no speaker labels either. Picking "a few consecutive lines" from a multi-speaker video therefore tends to splice the host's questions into the guest's answers, which reads as jumbled and misattributed.
+
+The Skill now handles this as follows:
+
+- It labels speakers in the transcript before picking lines, checks unclear lines against the frames, and drops lines it still can't attribute.
+- By default one image holds one speaker's lines, and the hero frame shows that speaker talking.
+- For a question-and-answer layout it asks you first, and the question and answer must be adjacent in the source. Native mode can't add speaker labels to the frames, so the delivery notes name the speaker of every line.
+- YouTube auto-captions roll, so the same line repeats and starts early. They are deduplicated before timestamps are chosen.
+
+You can say it up front: "This is a two-person interview; use only consecutive lines from the guest."
+
+</details>
+
 <div align="right"><a href="#readme-top">↑ Back to top</a></div>
 
 ## More details
