@@ -884,5 +884,92 @@ class CliIntegrationTests(unittest.TestCase):
             self.assertIn("--overwrite", repeated.stderr)
 
 
+class KeepGoingResumeTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        root = Path(self.tmp.name)
+        self.video = root / "v.mp4"
+        self.video.touch()
+        self.manifest = root / "m.json"
+        self.manifest.write_text(json.dumps({"images": [
+            {"title": "甲", "times": [1, 2]},
+            {"title": "乙", "times": [3, 4]},
+            {"title": "丙", "times": [5, 6]},
+        ]}), encoding="utf-8")
+        self.out_dir = root / "out"
+
+    def run_render(self, fail_titles=(), **flags):
+        args = mock.Mock(
+            video=str(self.video), manifest=str(self.manifest),
+            out_dir=str(self.out_dir), aspect=None, width=None, band_top=0.78,
+            band_bottom=0.96, hero_fraction=None, layout="natural", fit=None,
+            crop_center=None, allow_duplicate_frames=False, overwrite=False,
+            keep_going=False, resume=False,
+        )
+        for key, value in flags.items():
+            setattr(args, key, value)
+        rendered = []
+
+        def fake_render(video, times, out_path, *rest, **kwargs):
+            if Path(out_path).stem.split("_", 1)[1] in fail_titles:
+                raise RuntimeError("抽帧失败")
+            Image.new("RGB", (20, 20), "red").save(out_path)
+            rendered.append(Path(out_path).name)
+
+        with mock.patch.object(MODULE, "video_metadata", return_value=(640, 360, 10)), \
+                mock.patch.object(MODULE, "render_one", side_effect=fake_render):
+            try:
+                MODULE.command_render(args)
+                code = 0
+            except SystemExit as exc:
+                code = exc.code
+        return code, rendered
+
+    def test_default_failure_still_aborts_batch(self):
+        with self.assertRaises(RuntimeError):
+            self.run_render(fail_titles=("乙",))
+        self.assertFalse((self.out_dir / "渲染失败报告.json").exists())
+
+    def test_keep_going_renders_rest_and_writes_report(self):
+        code, rendered = self.run_render(fail_titles=("乙",), keep_going=True)
+        self.assertEqual(code, 1)
+        self.assertEqual(rendered, ["01_甲.jpg", "03_丙.jpg"])
+        report = json.loads(
+            (self.out_dir / "渲染失败报告.json").read_text(encoding="utf-8"))
+        self.assertEqual(len(report["failures"]), 1)
+        failure = report["failures"][0]
+        self.assertEqual((failure["index"], failure["title"]), (2, "乙"))
+        self.assertEqual(failure["times"], [3.0, 4.0])
+        self.assertIn("抽帧失败", failure["reason"])
+        self.assertFalse((self.out_dir / "final_contact_sheet.jpg").exists())
+
+    def test_resume_only_rerenders_missing_cards_and_clears_report(self):
+        self.run_render(fail_titles=("乙",), keep_going=True)
+        code, rendered = self.run_render(resume=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(rendered, ["02_乙.jpg"])
+        self.assertFalse((self.out_dir / "渲染失败报告.json").exists())
+        self.assertTrue((self.out_dir / "final_contact_sheet.jpg").is_file())
+
+    def test_resume_rerenders_corrupt_output(self):
+        self.run_render()
+        (self.out_dir / "03_丙.jpg").write_bytes(b"broken")
+        code, rendered = self.run_render(resume=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(rendered, ["03_丙.jpg"])
+
+    def test_resume_rerenders_truncated_jpeg(self):
+        self.run_render()
+        card = self.out_dir / "02_乙.jpg"
+        Image.effect_noise((200, 200), 64).convert("RGB").save(card, quality=95)
+        data = card.read_bytes()
+        card.write_bytes(data[: len(data) // 2])
+        self.assertFalse(MODULE.is_valid_image(card))
+        code, rendered = self.run_render(resume=True)
+        self.assertEqual(code, 0)
+        self.assertEqual(rendered, ["02_乙.jpg"])
+
+
 if __name__ == "__main__":
     unittest.main()
