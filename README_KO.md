@@ -456,4 +456,3 @@ GitHub Actions가 push와 pull request마다 Python 3.10과 3.13에서 검증합
 코드와 Skill 지침은 [MIT 라이선스](LICENSE)로 공개합니다. 예시 이미지는 결과물의 형태를 보여 주기 위한 것입니다. 입력 영상, 생성 이미지와 그 안에 나오는 제3자 콘텐츠는 이 라이선스로 추가 사용 권한을 얻지 않습니다.
 
 <div align="right"><a href="#readme-top">↑ 맨 위로</a></div>
-
