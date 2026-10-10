@@ -187,6 +187,12 @@ flowchart LR
 
 Agent 없이 스크립트를 직접 실행할 수도 있습니다. `VIDEO`를 실제 영상 경로로 바꾸세요.
 
+**소스 점검**: 다운로드 후 해상도를 확인하고 처음 10초를 디코딩해, 손상되었거나 저해상도인 소스를 프레임 추출 전에 걸러냅니다(`--min-height`를 생략하면 720p 미만은 경고만 합니다).
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py check-source VIDEO --min-height 720
+```
+
 **후보 프레임 선택**: 타임스탬프가 있는 후보 프레임 시트를 만듭니다.
 
 ```bash

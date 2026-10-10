@@ -188,6 +188,12 @@ Agent 会先检查来源、字幕类型和候选帧，确定模式后再生成�
 
 不经过 Agent 也可以直接跑脚本。下面的 `VIDEO` 换成你的视频路径。
 
+**自检来源**：下载后先检查分辨率并解码前 10 秒，坏流或低清在抽帧前就失败（不传 `--min-height` 时低于 720p 只警告）。
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py check-source VIDEO --min-height 720
+```
+
 **挑帧**：生成带时间点的候选帧总览，不用反复试时间点。
 
 ```bash

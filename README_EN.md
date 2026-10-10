@@ -187,6 +187,12 @@ The agent checks the source, subtitle type, and candidate frames, locks the mode
 
 You can also run the scripts without an agent. Replace `VIDEO` with your video path.
 
+**Check the source**: after download, verify resolution and decode the first 10 seconds so broken or low-res sources fail before frame extraction (without `--min-height`, below 720p only warns).
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py check-source VIDEO --min-height 720
+```
+
 **Pick frames**: build a timestamped candidate sheet instead of guessing timestamps.
 
 ```bash
