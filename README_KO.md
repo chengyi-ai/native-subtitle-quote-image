@@ -220,6 +220,15 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
   --script script.json --out output.jpg --aspect 3:4 --width 1440
 ```
 
+**선택형 6줄 카드**: `script.json`에 검토한 문구 6줄과 엄격히 증가하는 타임스탬프를 넣습니다. 1080×1440에서는 상단 주 화면 870px와 빈틈없이 이어지는 114px 자막 띠 5개를 사용하며, 여섯 줄의 중심 간격이 같습니다. 기존 스크립트 레이아웃은 기본값으로 유지됩니다.
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py render-script VIDEO \
+  --script script.json --out six-line.jpg --six-line-card --aspect 3:4 --width 1080
+```
+
+`--six-line-card`는 후편집 스크립트 자막에만 적용되며 `--layout natural` 또는 `--hero-fraction`과 함께 사용할 수 없습니다. 자막 띠는 기본적으로 원본 프레임 높이의 60% 지점에서 추출하며 `--band-center`로 조정할 수 있습니다. 각 문구의 출처와 완성 이미지를 확인하세요.
+
 **원본 비율과 가로 구도 유지(v2.2.0)**: 두 모드 모두 `--layout natural`을 지원합니다. `--width`를 생략하면 원본 너비를 유지하며 높이는 실제 내용에 따라 결정됩니다. 너비를 지정해도 같은 비율로 확대·축소합니다.
 
 ```bash
@@ -447,3 +456,4 @@ GitHub Actions가 push와 pull request마다 Python 3.10과 3.13에서 검증합
 코드와 Skill 지침은 [MIT 라이선스](LICENSE)로 공개합니다. 예시 이미지는 결과물의 형태를 보여 주기 위한 것입니다. 입력 영상, 생성 이미지와 그 안에 나오는 제3자 콘텐츠는 이 라이선스로 추가 사용 권한을 얻지 않습니다.
 
 <div align="right"><a href="#readme-top">↑ 맨 위로</a></div>
+
