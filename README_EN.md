@@ -401,6 +401,24 @@ Cookies are never exported, saved, uploaded, or committed. yt-dlp currently reco
 </details>
 
 <details>
+<summary><strong>Getting 403, 429, or bot checks when fetching videos</strong></summary>
+
+<br>
+
+This project does not help bypass platform rate limits, bot protection, DRM, paywalls, or region restrictions. These are the common cases in normal use:
+
+| Error | Usual cause | What to do |
+| --- | --- | --- |
+| `HTTP Error 403: Forbidden` | Outdated yt-dlp after a platform change, or a missing JavaScript runtime | Upgrade with `python3 -m pip install -U "yt-dlp[default]"` and install Deno (or Node.js with `--js-runtimes node`) |
+| `HTTP Error 429: Too Many Requests` | Too many requests in a short time | Pause for a while, process one video at a time, don't bulk-download, and don't rotate IPs to push through |
+| "Sign in to confirm you're not a bot", age checks | The platform requires a signed-in session | Follow the previous section: with your approval, use `--cookies-from-browser chrome` to read your own session temporarily |
+| Still blocked after signing in | Members-only content, region locks, DRM, or downloads not allowed | Pick another video you have the right to process |
+
+The most reliable route is a local video: footage you shot, licensed material, or videos the platform explicitly lets you download. Local mode doesn't need `yt-dlp` at all.
+
+</details>
+
+<details>
 <summary><strong>Update reminders</strong></summary>
 
 <br>

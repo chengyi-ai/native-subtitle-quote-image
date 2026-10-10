@@ -402,6 +402,24 @@ Cookie 不导出、不保存、不上传，也不写进仓库。yt-dlp 官方目
 </details>
 
 <details>
+<summary><strong>获取素材遇到 403、429 或机器人检测</strong></summary>
+
+<br>
+
+本项目不帮助绕过平台的风控、DRM、付费墙或地区限制。下面是正常使用中最常见的几种情况：
+
+| 报错 | 常见原因 | 建议做法 |
+| --- | --- | --- |
+| `HTTP Error 403: Forbidden` | yt-dlp 版本过旧，平台改了接口；或缺少 JavaScript 运行时 | 运行 `python3 -m pip install -U "yt-dlp[default]"` 升级，再装好 Deno（或 Node.js 并加 `--js-runtimes node`） |
+| `HTTP Error 429: Too Many Requests` | 短时间内请求太多 | 先停一段时间，一次只处理一个视频，不要批量抓取，也不要换 IP 硬冲 |
+| "登录以确认不是机器人"、年龄验证 | 平台要求登录态 | 按上一节流程，经你授权后用 `--cookies-from-browser chrome` 临时读取你自己的登录会话 |
+| 登录后仍无法访问 | 会员内容、地区限制、DRM 或平台不允许下载 | 换一个你有权处理的素材 |
+
+最稳的方式是直接用本地视频：自己拍摄的、已获授权的，或平台明确允许下载的素材。本地模式完全不需要 `yt-dlp`。
+
+</details>
+
+<details>
 <summary><strong>更新提醒</strong></summary>
 
 <br>
