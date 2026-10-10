@@ -464,4 +464,3 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 代码与 Skill 指令采用 [MIT License](LICENSE)。示例图片只用于展示输出效果；输入视频、生成图片及其中出现的第三方内容，不因本许可证获得额外授权。
 
 <div align="right"><a href="#readme-top">↑ 回到顶部</a></div>
-
