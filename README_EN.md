@@ -456,6 +456,8 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 
 GitHub Actions runs these checks on Python 3.10 and 3.13 for every push and pull request.
 
+On systems whose default encoding is not UTF-8 (for example GBK on Simplified Chinese Windows), set `PYTHONUTF8=1` first (PowerShell: `$env:PYTHONUTF8=1`; cmd: `set PYTHONUTF8=1`). `check_environment.py` prints a hint when it detects a non-UTF-8 default encoding.
+
 </details>
 
 **In-depth guides** (Chinese; the commands are language-independent)

@@ -10,6 +10,9 @@ from pathlib import Path
 from unittest import mock
 
 
+# 子进程继承 UTF-8 模式，避免 GBK 等默认编码下输出与解码不一致。
+os.environ.setdefault("PYTHONUTF8", "1")
+
 ROOT = Path(__file__).resolve().parents[1]
 UPDATE_SCRIPT = (
     ROOT
@@ -129,7 +132,7 @@ class UpdateCheckTests(unittest.TestCase):
             proc = subprocess.run(
                 [sys.executable, str(UPDATE_SCRIPT)],
                 capture_output=True,
-                text=True,
+                encoding="utf-8", errors="replace",
                 check=True,
                 env=environment,
             )

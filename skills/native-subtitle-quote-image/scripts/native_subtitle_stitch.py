@@ -57,7 +57,8 @@ def video_metadata(path):
     proc = subprocess.run(
         [FFMPEG, "-hide_banner", "-i", str(path)],
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     stderr = proc.stderr or ""
     size_match = re.search(r"Video:.*?(\d{2,5})x(\d{2,5})[\s,]", stderr)

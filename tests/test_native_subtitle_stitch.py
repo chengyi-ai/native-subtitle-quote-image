@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -9,6 +10,9 @@ from unittest import mock
 
 from PIL import Image, ImageDraw, ImageOps
 
+
+# 子进程继承 UTF-8 模式，避免 GBK 等默认编码下输出与解码不一致。
+os.environ.setdefault("PYTHONUTF8", "1")
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = (
@@ -152,7 +156,7 @@ class HelperTests(unittest.TestCase):
         proc = subprocess.run(
             [sys.executable, str(ENV_SCRIPT), "--json"],
             capture_output=True,
-            text=True,
+            encoding="utf-8", errors="replace",
             check=True,
         )
         payload = json.loads(proc.stdout)
@@ -167,7 +171,7 @@ class HelperTests(unittest.TestCase):
         proc = subprocess.run(
             [sys.executable, str(ENV_SCRIPT), "--url-mode"],
             capture_output=True,
-            text=True,
+            encoding="utf-8", errors="replace",
             check=False,
         )
         self.assertIn("不要退回本地模式", proc.stdout)
@@ -230,7 +234,7 @@ class HelperTests(unittest.TestCase):
                 "/tmp/unused-native-subtitle-output",
             ],
             capture_output=True,
-            text=True,
+            encoding="utf-8", errors="replace",
         )
         self.assertNotEqual(proc.returncode, 0)
         self.assertIn("视频不存在或不是文件", proc.stderr)
@@ -346,7 +350,7 @@ class NaturalGeometryTests(unittest.TestCase):
                 proc = subprocess.run(
                     [sys.executable, str(SCRIPT), "render-script", "unused.mp4",
                      "--script", "unused.json", "--out", "unused.jpg", *options],
-                    capture_output=True, text=True,
+                    capture_output=True, encoding="utf-8", errors="replace",
                 )
                 self.assertNotEqual(proc.returncode, 0)
                 self.assertIn(message, proc.stderr)
@@ -363,7 +367,7 @@ class NaturalGeometryTests(unittest.TestCase):
                 proc = subprocess.run(
                     [sys.executable, str(SCRIPT), "render", "unused.mp4",
                      "--manifest", "unused.json", "--out-dir", "unused", *options],
-                    capture_output=True, text=True,
+                    capture_output=True, encoding="utf-8", errors="replace",
                 )
                 self.assertNotEqual(proc.returncode, 0)
                 self.assertIn(message, proc.stderr)
@@ -414,7 +418,7 @@ class SixLineCardTests(unittest.TestCase):
                     [sys.executable, str(SCRIPT), "render-script", "unused.mp4",
                      "--script", "unused.json", "--out", "unused.jpg",
                      "--six-line-card", *options],
-                    capture_output=True, text=True,
+                    capture_output=True, encoding="utf-8", errors="replace",
                 )
                 self.assertNotEqual(proc.returncode, 0)
                 self.assertIn(message, proc.stderr)
@@ -667,13 +671,13 @@ class DuplicateFrameTests(unittest.TestCase):
                 sys.executable, str(SCRIPT), "render", str(video),
                 "--manifest", str(manifest), "--out-dir", str(tmp_path / "out"),
             ]
-            blocked = subprocess.run(command, capture_output=True, text=True)
+            blocked = subprocess.run(command, capture_output=True, encoding="utf-8", errors="replace")
             self.assertNotEqual(blocked.returncode, 0)
             self.assertIn("静态封面", blocked.stderr)
             self.assertFalse((tmp_path / "out" / "01_static.jpg").exists())
 
             allowed = subprocess.run(
-                [*command, "--allow-duplicate-frames"], capture_output=True, text=True
+                [*command, "--allow-duplicate-frames"], capture_output=True, encoding="utf-8", errors="replace"
             )
             self.assertEqual(allowed.returncode, 0, allowed.stderr)
             self.assertTrue((tmp_path / "out" / "01_static.jpg").is_file())
@@ -698,7 +702,7 @@ class CheckSourceTests(unittest.TestCase):
         return subprocess.run(
             [sys.executable, str(SCRIPT), "check-source", str(video), *extra],
             capture_output=True,
-            text=True,
+            encoding="utf-8", errors="replace",
         )
 
     def test_clean_hd_source_passes(self):
@@ -795,7 +799,7 @@ class CliIntegrationTests(unittest.TestCase):
                 ],
                 check=True,
                 capture_output=True,
-                text=True,
+                encoding="utf-8", errors="replace",
             )
             self.assertTrue(sample.is_file())
 
@@ -811,7 +815,7 @@ class CliIntegrationTests(unittest.TestCase):
                 ],
                 check=True,
                 capture_output=True,
-                text=True,
+                encoding="utf-8", errors="replace",
             )
             self.assertTrue(default_sample.is_file())
 
@@ -833,7 +837,7 @@ class CliIntegrationTests(unittest.TestCase):
                 ],
                 check=True,
                 capture_output=True,
-                text=True,
+                encoding="utf-8", errors="replace",
             )
             self.assertTrue(focused_sample.is_file())
 
@@ -851,7 +855,7 @@ class CliIntegrationTests(unittest.TestCase):
                 ],
                 check=True,
                 capture_output=True,
-                text=True,
+                encoding="utf-8", errors="replace",
             )
             self.assertTrue(band.is_file())
 
@@ -879,7 +883,7 @@ class CliIntegrationTests(unittest.TestCase):
                 ],
                 check=True,
                 capture_output=True,
-                text=True,
+                encoding="utf-8", errors="replace",
             )
             output = out_dir / "01_合成测试.jpg"
             self.assertTrue(output.is_file())
@@ -921,7 +925,7 @@ class CliIntegrationTests(unittest.TestCase):
                 ],
                 check=True,
                 capture_output=True,
-                text=True,
+                encoding="utf-8", errors="replace",
             )
             with Image.open(scripted_output) as rendered:
                 self.assertEqual(rendered.size, (300, 400))
@@ -933,7 +937,7 @@ class CliIntegrationTests(unittest.TestCase):
             ]:
                 subprocess.run(
                     [sys.executable, str(SCRIPT), command, str(video), *inputs, "--layout", "natural"],
-                    check=True, capture_output=True, text=True,
+                    check=True, capture_output=True, encoding="utf-8", errors="replace",
                 )
                 natural_path = (tmp_path / "natural" / "01_合成测试.jpg" if command == "render"
                                 else tmp_path / "natural-script.jpg")
@@ -945,7 +949,7 @@ class CliIntegrationTests(unittest.TestCase):
                 [sys.executable, str(SCRIPT), "render", str(video),
                  "--manifest", str(manifest), "--out-dir", str(fixed_dir),
                  "--aspect", "3:4", "--width", "300"],
-                check=True, capture_output=True, text=True,
+                check=True, capture_output=True, encoding="utf-8", errors="replace",
             )
             with Image.open(fixed_dir / "01_合成测试.jpg") as rendered:
                 self.assertEqual(rendered.size, (300, 400))
@@ -964,7 +968,7 @@ class CliIntegrationTests(unittest.TestCase):
                     "300",
                 ],
                 capture_output=True,
-                text=True,
+                encoding="utf-8", errors="replace",
             )
             self.assertNotEqual(repeated.returncode, 0)
             self.assertIn("--overwrite", repeated.stderr)

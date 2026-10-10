@@ -170,13 +170,13 @@ class BumpVersionTests(unittest.TestCase):
             with mock.patch("sys.stdout"):
                 BUMP.main(["minor", "--root", str(root)])
 
-            self.assertEqual((root / "skills/native-subtitle-quote-image/VERSION").read_text().strip(), expected)
+            self.assertEqual((root / "skills/native-subtitle-quote-image/VERSION").read_text(encoding="utf-8").strip(), expected)
             plugin_after = (root / ".codex-plugin/plugin.json").read_text(encoding="utf-8")
             self.assertEqual(json.loads(plugin_after)["version"], expected)
             self.assertEqual(
                 plugin_after, plugin_before.replace(f'"version": "{current}"', f'"version": "{expected}"')
             )
-            self.assertIn(f'EXPECTED_VERSION = "{expected}"', (root / "scripts/validate_repo.py").read_text())
+            self.assertIn(f'EXPECTED_VERSION = "{expected}"', (root / "scripts/validate_repo.py").read_text(encoding="utf-8"))
 
     def test_refuses_downgrade(self):
         with mock.patch("sys.stderr"), self.assertRaises(SystemExit):

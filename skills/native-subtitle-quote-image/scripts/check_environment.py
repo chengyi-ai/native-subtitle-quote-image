@@ -5,6 +5,7 @@ import argparse
 import importlib
 import importlib.util
 import json
+import locale
 import shutil
 import subprocess
 import sys
@@ -33,7 +34,8 @@ def command_version(command, args=("--version",)):
         proc = subprocess.run(
             [path, *args],
             capture_output=True,
-            text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=10,
             check=False,
         )
@@ -62,6 +64,12 @@ def add(rows, component, status, purpose, detail="", required="core"):
     )
 
 
+def utf8_default():
+    if sys.flags.utf8_mode:
+        return True
+    return locale.getpreferredencoding(False).lower().replace("-", "") == "utf8"
+
+
 def inspect_environment():
     rows = []
     python_ok = sys.version_info >= (3, 10)
@@ -72,6 +80,17 @@ def inspect_environment():
         "运行 Skill 脚本",
         sys.version.split()[0],
     )
+
+    if not utf8_default():
+        add(
+            rows,
+            "UTF-8 encoding",
+            "optional",
+            "文本读写：默认编码非 UTF-8 时中文路径与输出可能乱码",
+            f"当前默认编码 {locale.getpreferredencoding(False)}；"
+            "建议设置 PYTHONUTF8=1（cmd: set PYTHONUTF8=1）",
+            required="optional",
+        )
 
     pillow = module_version("PIL")
     add(
