@@ -496,6 +496,7 @@ def scripted_render_one(
     frame_top=0.0,
     frame_bottom=1.0,
     check_duplicates=False,
+    six_line_card=False,
 ):
     frames = [
         crop_band(grab_frame(video, line["t"]), frame_top, frame_bottom)[0]
@@ -531,13 +532,24 @@ def scripted_render_one(
     aw, ah = aspect
     out_height = round(out_width * ah / aw)
     strip_count = len(lines) - 1
-    hero_fraction = choose_hero_fraction(strip_count, hero_fraction)
-    hero_height = round(out_height * hero_fraction)
-    remaining = out_height - hero_height
-    base_strip = remaining // strip_count
-    strip_heights = [base_strip] * strip_count
-    strip_heights[-1] += remaining - sum(strip_heights)
-    base_font = font_size or max(24, round(out_width / 18))
+    if six_line_card:
+        # 1080x1440: 870px hero + five contiguous 114px strips.
+        # Keep the strip pitch proportional when --width changes.
+        strip_height = max(1, round(out_width * 114 / 1080))
+        hero_height = out_height - strip_height * strip_count
+        if hero_height <= strip_height:
+            raise SystemExit("六句卡布局没有足够空间放置主画面；请使用 3:4 比例")
+        strip_heights = [strip_height] * strip_count
+        hero_fraction = hero_height / out_height
+        base_font = font_size or max(24, round(out_width * 0.0587))
+    else:
+        hero_fraction = choose_hero_fraction(strip_count, hero_fraction)
+        hero_height = round(out_height * hero_fraction)
+        remaining = out_height - hero_height
+        base_strip = remaining // strip_count
+        strip_heights = [base_strip] * strip_count
+        strip_heights[-1] += remaining - sum(strip_heights)
+        base_font = font_size or max(24, round(out_width / 18))
 
     hero = ImageOps.fit(
         first_frame,
@@ -546,10 +558,13 @@ def scripted_render_one(
         centering=(0.5, 0.5),
     )
     first_strip_height = strip_heights[0]
+    first_line_y = hero.height - first_strip_height // 2
+    if not six_line_card:
+        first_line_y -= max(4, out_height // 150)
     draw_scripted_subtitle(
         hero,
         lines[0]["text"],
-        hero.height - first_strip_height // 2 - max(4, out_height // 150),
+        first_line_y,
         font_path,
         min(base_font, max(16, round(first_strip_height * 0.62))),
         round(out_width * 0.92),
@@ -832,6 +847,13 @@ def command_render_script(args):
             f"{exc.msg}"
         ) from None
     lines = normalize_script_lines(data, duration)
+    if args.six_line_card:
+        if args.layout != "fixed" or not math.isclose(args.aspect[0] / args.aspect[1], 0.75):
+            raise SystemExit("--six-line-card 只支持固定 3:4 布局")
+        if len(lines) != 6:
+            raise SystemExit("--six-line-card 需要恰好 6 句已核对台词")
+        if args.hero_fraction is not None:
+            raise SystemExit("--six-line-card 不接受 --hero-fraction；主画面高度由字幕条计算")
     out_path = Path(args.out).expanduser().resolve()
     refuse_existing([out_path], args.overwrite)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -852,6 +874,7 @@ def command_render_script(args):
         args.frame_top,
         args.frame_bottom,
         check_duplicates=not args.allow_duplicate_frames,
+        six_line_card=args.six_line_card,
     )
 
 
@@ -943,13 +966,16 @@ def main():
     scripted.add_argument(
         "--band-center",
         type=float,
-        default=0.88,
-        help="字幕条在源画面中的垂直中心比例（默认 0.88）",
+        help="字幕条在源画面中的垂直中心比例（默认 0.88；六句卡默认 0.60）",
     )
     scripted.add_argument(
         "--hero-fraction",
         type=float,
         help="主画面高度比例；默认按台词数量自动保持紧凑密度",
+    )
+    scripted.add_argument(
+        "--six-line-card", action="store_true",
+        help="可选 3:4 六句卡：首句在主画面，另五句等距排在连续字幕条上",
     )
     scripted.add_argument("--font", help="中文字体文件；未指定时尝试系统字体")
     scripted.add_argument("--font-size", type=int, help="基础字号，过长台词仍会自动缩小")
@@ -987,8 +1013,11 @@ def main():
             raise SystemExit("--crop-center 只用于 --fit crop")
     if hasattr(args, "aspect") and args.aspect is None:
         args.aspect = parse_aspect("3:4")
-    if hasattr(args, "band_center") and not 0.1 <= args.band_center <= 0.98:
-        raise SystemExit("--band-center 必须在 0.10–0.98 之间")
+    if hasattr(args, "band_center"):
+        if args.band_center is None:
+            args.band_center = 0.60 if args.six_line_card else 0.88
+        if not 0.1 <= args.band_center <= 0.98:
+            raise SystemExit("--band-center 必须在 0.10–0.98 之间")
     if getattr(args, "font_size", None) is not None and args.font_size < 12:
         raise SystemExit("--font-size 不能小于 12")
     if (
