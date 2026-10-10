@@ -21,7 +21,7 @@ README_EN = ROOT / "README_EN.md"
 README_KO = ROOT / "README_KO.md"
 PLUGIN = ROOT / ".codex-plugin" / "plugin.json"
 EXPECTED_NAME = "native-subtitle-quote-image"
-EXPECTED_VERSION = "2.4.1"
+EXPECTED_VERSION = "2.5.0"
 
 
 def main():
