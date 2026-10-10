@@ -463,4 +463,3 @@ Open an [issue](https://github.com/chengyi-ai/native-subtitle-quote-image/issues
 Code and Skill instructions are released under the [MIT License](LICENSE). The demo images only illustrate the Skill's output; no additional rights are granted for input videos, generated images, or third-party content appearing in them.
 
 <div align="right"><a href="#readme-top">↑ Back to top</a></div>
-
