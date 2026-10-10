@@ -235,6 +235,13 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 
 `--six-line-card` applies only to post-produced scripted subtitles and cannot be combined with `--layout natural` or `--hero-fraction`. The strip sampling center defaults to 60% of source-frame height and can be changed with `--band-center`. Review every source line and rendered image.
 
+**Optional speaker prefix**: for Q&A or conversation cards in script mode, add `"speaker": "Host"` to each line in `script.json` and pass `--speaker-prefix on-change` to draw a prefix such as `Host:` only when the speaker changes. `every` draws it on every line; `none` (default) draws nothing. The prefix is smaller than the line and uses an accent color, and it never makes the line text shrink when the line fits. Keep the speaker in the `speaker` field, not inside `text`.
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py render-script VIDEO \
+  --script script.json --out qa.jpg --speaker-prefix on-change
+```
+
 **Preserve source proportions and the wide composition (v2.2.0)**: both subtitle modes support `--layout natural`. Without `--width`, the source width is retained and the height follows the stacked content instead of a forced 3:4 canvas. An explicit width uses proportional scaling only.
 
 ```bash
@@ -328,7 +335,7 @@ The Skill now handles this as follows:
 
 - It labels speakers in the transcript before picking lines, checks unclear lines against the frames, and drops lines it still can't attribute.
 - By default one image holds one speaker's lines, and the hero frame shows that speaker talking.
-- For a question-and-answer layout it asks you first, and the question and answer must be adjacent in the source. Native mode can't add speaker labels to the frames, so the delivery notes name the speaker of every line.
+- For a question-and-answer layout it asks you first, and the question and answer must be adjacent in the source. Native mode can't add speaker labels to the frames, so the delivery notes name the speaker of every line. Script mode can label speakers on the image with `--speaker-prefix` (see below).
 - YouTube auto-captions roll, so the same line repeats and starts early. They are deduplicated before timestamps are chosen.
 
 You can say it up front: "This is a two-person interview; use only consecutive lines from the guest."

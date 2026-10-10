@@ -233,9 +233,33 @@ def load_subtitle_font(path, size, text):
     return ImageFont.load_default()
 
 
-def draw_scripted_subtitle(image, text, y_center, font_path, font_size, max_width):
+# 说话人前缀：比台词小一号、用强调色，与台词共用基线。
+SPEAKER_PREFIX_SCALE = 0.68
+SPEAKER_PREFIX_FILL = (255, 214, 74)
+SPEAKER_MODES = ("none", "on-change", "every")
+
+
+def speaker_label(speaker, text):
+    separator = "：" if contains_cjk(speaker + text) else ": "
+    return f"{speaker}{separator}"
+
+
+def draw_scripted_subtitle(
+    image, text, y_center, font_path, font_size, max_width, speaker=None
+):
     draw = ImageDraw.Draw(image)
     minimum = max(12, round(font_size * 0.55))
+    label = speaker_label(speaker, text) if speaker else ""
+    label_width = 0
+    if label:
+        # 前缀字号只跟基础字号走，不随台词缩小；放不下时只缩台词。
+        label_size = max(12, round(font_size * SPEAKER_PREFIX_SCALE))
+        label_font = load_subtitle_font(font_path, label_size, label)
+        label_stroke = max(2, label_size // 14)
+        label_box = draw.textbbox(
+            (0, 0), label, font=label_font, stroke_width=label_stroke
+        )
+        label_width = label_box[2] - label_box[0]
     chosen = None
     box = None
     for size in range(font_size, minimum - 1, -2):
@@ -244,7 +268,7 @@ def draw_scripted_subtitle(image, text, y_center, font_path, font_size, max_widt
         candidate_box = draw.textbbox(
             (0, 0), text, font=font, stroke_width=stroke
         )
-        if candidate_box[2] - candidate_box[0] <= max_width:
+        if label_width + candidate_box[2] - candidate_box[0] <= max_width:
             chosen = (font, stroke)
             box = candidate_box
             break
@@ -255,8 +279,20 @@ def draw_scripted_subtitle(image, text, y_center, font_path, font_size, max_widt
     font, stroke = chosen
     text_width = box[2] - box[0]
     text_height = box[3] - box[1]
-    x = (image.width - text_width) // 2 - box[0]
+    x = (image.width - label_width - text_width) // 2 - box[0] + label_width
     y = y_center - text_height // 2 - box[1]
+    if label:
+        # 默认锚点在字形上沿，基线 = y + ascent；前缀对齐到台词基线。
+        baseline = y + font.getmetrics()[0]
+        label_y = baseline - label_font.getmetrics()[0]
+        draw.text(
+            (x + box[0] - label_width - label_box[0], label_y),
+            label,
+            font=label_font,
+            fill=SPEAKER_PREFIX_FILL,
+            stroke_width=label_stroke,
+            stroke_fill="black",
+        )
     draw.text(
         (x, y),
         text,
@@ -267,7 +303,7 @@ def draw_scripted_subtitle(image, text, y_center, font_path, font_size, max_widt
     )
 
 
-def normalize_script_lines(data, duration):
+def normalize_script_lines(data, duration, speaker_mode="none"):
     lines = data.get("lines") if isinstance(data, dict) else None
     if not isinstance(lines, list) or len(lines) < 2:
         raise SystemExit("台词脚本必须包含至少 2 项的 lines 数组")
@@ -295,9 +331,34 @@ def normalize_script_lines(data, duration):
             raise SystemExit(f"lines[{index}].text 不能为空")
         if "\n" in text or "\r" in text:
             raise SystemExit(f"lines[{index}].text 必须是单行台词")
-        normalized.append({"t": seconds, "text": text})
+        entry = {"t": seconds, "text": text}
+        speaker = item.get("speaker")
+        if speaker is not None:
+            if not isinstance(speaker, str) or not speaker.strip():
+                raise SystemExit(f"lines[{index}].speaker 必须是非空字符串")
+            speaker = speaker.strip()
+            if "\n" in speaker or "\r" in speaker:
+                raise SystemExit(f"lines[{index}].speaker 必须是单行")
+            entry["speaker"] = speaker
+        elif speaker_mode != "none":
+            raise SystemExit(
+                f"--speaker-prefix {speaker_mode} 需要每句都有 speaker；"
+                f"lines[{index}] 缺少 speaker"
+            )
+        normalized.append(entry)
         previous = seconds
     return normalized
+
+
+def apply_speaker_prefix(lines, mode):
+    """按模式决定每句是否显示前缀，结果写入 prefix 字段；text 不变。"""
+    previous = None
+    for line in lines:
+        speaker = line.get("speaker")
+        show = mode == "every" or (mode == "on-change" and speaker != previous)
+        line["prefix"] = speaker if show else None
+        previous = speaker
+    return lines
 
 
 def normalize_times(values, label="时间点"):
@@ -525,6 +586,7 @@ def scripted_render_one(
         draw_scripted_subtitle(
             hero, lines[0]["text"], hero.height - strip_height // 2,
             font_path, base_font, round(out_width * 0.92),
+            speaker=lines[0].get("prefix"),
         )
         parts = [hero]
         for line, frame in zip(lines[1:], frames[1:]):
@@ -535,6 +597,7 @@ def scripted_render_one(
             draw_scripted_subtitle(
                 strip, line["text"], strip.height // 2,
                 font_path, base_font, round(out_width * 0.92),
+                speaker=line.get("prefix"),
             )
             parts.append(strip)
         save_stack(parts, out_path)
@@ -574,6 +637,7 @@ def scripted_render_one(
         font_path,
         min(base_font, max(16, round(first_strip_height * 0.62))),
         round(out_width * 0.92),
+        speaker=lines[0].get("prefix"),
     )
 
     strips = []
@@ -598,6 +662,7 @@ def scripted_render_one(
             font_path,
             min(base_font, max(16, round(strip.height * 0.62))),
             round(out_width * 0.92),
+            speaker=line.get("prefix"),
         )
         strips.append(strip)
 
@@ -960,7 +1025,10 @@ def command_render_script(args):
             f"台词脚本 JSON 格式错误（第 {exc.lineno} 行第 {exc.colno} 列）: "
             f"{exc.msg}"
         ) from None
-    lines = normalize_script_lines(data, duration)
+    lines = normalize_script_lines(data, duration, args.speaker_prefix)
+    apply_speaker_prefix(lines, args.speaker_prefix)
+    if args.speaker_prefix == "none" and any("speaker" in line for line in lines):
+        print("提示: 台词含 speaker 字段，但未启用 --speaker-prefix，画面不显示说话人")
     if args.six_line_card:
         if len(lines) != 6:
             raise SystemExit("--six-line-card 需要恰好 6 句已核对台词")
@@ -1107,6 +1175,11 @@ def main():
     )
     scripted.add_argument("--font", help="中文字体文件；未指定时尝试系统字体")
     scripted.add_argument("--font-size", type=int, help="基础字号，过长台词仍会自动缩小")
+    scripted.add_argument(
+        "--speaker-prefix", choices=SPEAKER_MODES, default="none",
+        help="说话人前缀：none 不显示（默认）；on-change 换人时显示；every 每句显示。"
+             "需在台词 JSON 每句写 speaker",
+    )
     scripted.add_argument(
         "--allow-duplicate-frames",
         action="store_true",

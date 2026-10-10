@@ -428,7 +428,10 @@ class SixLineCardTests(unittest.TestCase):
             script.write_text(json.dumps({"lines": [
                 {"t": i, "text": f"Line {i}"} for i in range(5)
             ]}), encoding="utf-8")
-            args = mock.Mock(video=str(video), script=str(script), six_line_card=True)
+            args = mock.Mock(
+                video=str(video), script=str(script), six_line_card=True,
+                speaker_prefix="none",
+            )
             with mock.patch.object(MODULE, "video_metadata", return_value=(1080, 870, 10)):
                 with self.assertRaisesRegex(SystemExit, "恰好 6 句"):
                     MODULE.command_render_script(args)
@@ -468,6 +471,89 @@ def subtitle_band(width, height, left, right, background="#5a5a5a"):
         draw.rectangle((x, height * 0.3, x + 3, height * 0.7), fill="white",
                        outline="black", width=1)
     return band
+
+
+class SpeakerPrefixTests(unittest.TestCase):
+    LINES = {"lines": [
+        {"t": 1, "text": "Question one", "speaker": "Host"},
+        {"t": 2, "text": "Question two", "speaker": "Host"},
+        {"t": 3, "text": "Answer one", "speaker": "Guest"},
+        {"t": 4, "text": "Answer two", "speaker": "Guest"},
+        {"t": 5, "text": "Back to you", "speaker": "Host"},
+    ]}
+
+    def prefixes(self, mode):
+        lines = MODULE.normalize_script_lines(self.LINES, 10, mode)
+        return [line["prefix"] for line in MODULE.apply_speaker_prefix(lines, mode)]
+
+    def test_modes_choose_which_lines_show_prefix(self):
+        self.assertEqual(self.prefixes("none"), [None] * 5)
+        self.assertEqual(
+            self.prefixes("on-change"), ["Host", None, "Guest", None, "Host"]
+        )
+        self.assertEqual(
+            self.prefixes("every"), ["Host", "Host", "Guest", "Guest", "Host"]
+        )
+
+    def test_speaker_stays_out_of_text(self):
+        lines = MODULE.normalize_script_lines(self.LINES, 10, "every")
+        self.assertEqual(lines[0]["text"], "Question one")
+        self.assertEqual(lines[0]["speaker"], "Host")
+
+    def test_prefix_modes_require_speaker_on_every_line(self):
+        data = {"lines": [{"t": 1, "text": "a", "speaker": "Host"}, {"t": 2, "text": "b"}]}
+        self.assertEqual(len(MODULE.normalize_script_lines(data, 10, "none")), 2)
+        for mode in ("on-change", "every"):
+            with self.assertRaisesRegex(SystemExit, r"lines\[1\] 缺少 speaker"):
+                MODULE.normalize_script_lines(data, 10, mode)
+
+    def test_invalid_speaker_values_are_rejected(self):
+        for bad in ("", "  ", 3, "A\nB"):
+            data = {"lines": [{"t": 1, "text": "a", "speaker": bad}, {"t": 2, "text": "b"}]}
+            with self.assertRaises(SystemExit):
+                MODULE.normalize_script_lines(data, 10)
+
+    def test_label_separator_follows_script(self):
+        self.assertEqual(MODULE.speaker_label("主持人", "你好"), "主持人：")
+        self.assertEqual(MODULE.speaker_label("Host", "Hello"), "Host: ")
+
+    def test_prefix_is_drawn_in_accent_color_left_of_text(self):
+        plain = Image.new("RGB", (900, 120), "#404040")
+        prefixed = plain.copy()
+        MODULE.draw_scripted_subtitle(plain, "Hello world", 60, None, 48, 820)
+        MODULE.draw_scripted_subtitle(
+            prefixed, "Hello world", 60, None, 48, 820, speaker="Host"
+        )
+        accent = [
+            x for x in range(prefixed.width) for y in range(prefixed.height)
+            if prefixed.getpixel((x, y)) == MODULE.SPEAKER_PREFIX_FILL
+        ]
+        white = [
+            x for x in range(prefixed.width) for y in range(prefixed.height)
+            if prefixed.getpixel((x, y)) == (255, 255, 255)
+        ]
+        self.assertTrue(accent, "前缀应使用强调色")
+        self.assertLess(max(accent), min(white), "前缀应在台词左侧")
+        plain_white = [
+            x for x in range(plain.width) for y in range(plain.height)
+            if plain.getpixel((x, y)) == (255, 255, 255)
+        ]
+        # 放得下时，前缀不让台词缩小：白字宽度不变。
+        self.assertEqual(
+            max(white) - min(white), max(plain_white) - min(plain_white)
+        )
+
+    def test_prefixed_line_stays_inside_safe_width(self):
+        image = Image.new("RGB", (600, 100), "#404040")
+        MODULE.draw_scripted_subtitle(
+            image, "M" * 12, 50, None, 48, 552, speaker="Speaker"
+        )
+        lit = [
+            x for x in range(image.width) for y in range(image.height)
+            if image.getpixel((x, y)) != (64, 64, 64)
+        ]
+        self.assertGreaterEqual(min(lit), 0)
+        self.assertLessEqual(max(lit) - min(lit), 552)
 
 
 class SideCropTests(unittest.TestCase):

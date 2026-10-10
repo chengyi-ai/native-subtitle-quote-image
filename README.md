@@ -236,6 +236,13 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 
 `--six-line-card` 仅用于后期绘制的脚本字幕，不接受 `--layout natural` 或 `--hero-fraction`。字幕条默认从源画面高度的 60% 处取样，可用 `--band-center` 调整；仍须逐句核对来源和逐张检查画面。
 
+**可选说话人前缀**：问答、对谈类脚本字幕图，可以在 `script.json` 每句加 `"speaker": "主持人"`，再加 `--speaker-prefix on-change`，只在换人时画出「主持人：」这类前缀；`every` 每句都画，`none`（默认）不画。前缀比台词小一号、用强调色，台词字号不会因为前缀而变小。说话人写在 `speaker` 字段里，不写进 `text`。
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py render-script VIDEO \
+  --script script.json --out qa.jpg --speaker-prefix on-change
+```
+
 **保留人物原比例与横屏构图（v2.2.0）**：两种字幕模式都支持 `--layout natural`。不指定宽度时保留源宽度，图片高度按实际内容计算，不强制 3:4；指定 `--width` 也只做等比缩放。
 
 ```bash
@@ -329,7 +336,7 @@ Skill 现在会这样处理：
 
 - 选句前先给文字稿标上说话人，拿不准的句子回看画面确认，仍确认不了就不用。
 - 默认一张图只放同一个人的话，主画面就是这个人在说话。
-- 想要"一问一答"时先跟你确认，问和答必须在原视频里紧挨着；原生模式没法在画面上补标说话人，交付时会逐句写明。
+- 想要"一问一答"时先跟你确认，问和答必须在原视频里紧挨着；原生模式没法在画面上补标说话人，交付时会逐句写明；脚本模式可以在画面上标出说话人，见下方 `--speaker-prefix`。
 - YouTube 自动字幕是滚动显示的，同一句会重复出现、时间也偏早，会先去重再定时间点。
 
 调用时可以直接说明："这是两人访谈，只选嘉宾连续说的几句。"
