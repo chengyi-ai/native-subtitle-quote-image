@@ -457,6 +457,8 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 
 每次推送和 Pull Request 都会在 Python 3.10 和 3.13 上通过 GitHub Actions 自动检查。
 
+Windows 等默认编码不是 UTF-8 的系统（如简体中文 Windows 的 GBK），建议先设置 `PYTHONUTF8=1`（PowerShell：`$env:PYTHONUTF8=1`；cmd：`set PYTHONUTF8=1`）再运行上述命令；`check_environment.py` 会在检测到非 UTF-8 默认编码时给出提示。
+
 </details>
 
 **深入文档**

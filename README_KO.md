@@ -449,6 +449,8 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 
 GitHub Actions가 push와 pull request마다 Python 3.10과 3.13에서 검증합니다.
 
+기본 인코딩이 UTF-8이 아닌 시스템(예: 중국어 간체 Windows의 GBK)에서는 먼저 `PYTHONUTF8=1`을 설정하세요(PowerShell: `$env:PYTHONUTF8=1`, cmd: `set PYTHONUTF8=1`). `check_environment.py`는 UTF-8이 아닌 기본 인코딩을 감지하면 안내를 출력합니다.
+
 </details>
 
 **상세 참고 문서**: 아래 문서는 중국어로 작성되어 있으며 명령어는 언어와 관계없이 같습니다.
