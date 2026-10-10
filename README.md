@@ -221,6 +221,15 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
   --script script.json --out output.jpg --aspect 3:4 --width 1440
 ```
 
+**可选六句卡**：`script.json` 中放 6 句已核对、时间点严格递增的台词。此预设在 1080×1440 画布上使用 870px 主画面和下方 5 条各 114px 的连续字幕条，首句与后五句等距；默认脚本布局不变。
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py render-script VIDEO \
+  --script script.json --out six-line.jpg --six-line-card --aspect 3:4 --width 1080
+```
+
+`--six-line-card` 仅用于后期绘制的脚本字幕，不接受 `--layout natural` 或 `--hero-fraction`。字幕条默认从源画面高度的 60% 处取样，可用 `--band-center` 调整；仍须逐句核对来源和逐张检查画面。
+
 **保留人物原比例与横屏构图（v2.2.0）**：两种字幕模式都支持 `--layout natural`。不指定宽度时保留源宽度，图片高度按实际内容计算，不强制 3:4；指定 `--width` 也只做等比缩放。
 
 ```bash
@@ -455,3 +464,4 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 代码与 Skill 指令采用 [MIT License](LICENSE)。示例图片只用于展示输出效果；输入视频、生成图片及其中出现的第三方内容，不因本许可证获得额外授权。
 
 <div align="right"><a href="#readme-top">↑ 回到顶部</a></div>
+
