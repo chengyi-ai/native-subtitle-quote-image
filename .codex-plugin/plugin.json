@@ -1,6 +1,6 @@
 {
   "name": "native-subtitle-quote-image",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "把本地或在线视频经过选题、精确取帧和紧凑排版，制作成原生或脚本字幕长图，支持 3:4 和原比例布局。",
   "author": {
     "name": "程意",
