@@ -235,6 +235,13 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 
 `--six-line-card`는 후편집 스크립트 자막에만 적용되며 `--layout natural` 또는 `--hero-fraction`과 함께 사용할 수 없습니다. 자막 띠는 기본적으로 원본 프레임 높이의 60% 지점에서 추출하며 `--band-center`로 조정할 수 있습니다. 각 문구의 출처와 완성 이미지를 확인하세요.
 
+**선택: 화자 접두어**: 스크립트 모드의 질의응답·대담 이미지에서 `script.json`의 각 문장에 `"speaker": "진행자"`를 넣고 `--speaker-prefix on-change`를 쓰면 화자가 바뀔 때만 `진행자:` 같은 접두어를 그립니다. `every`는 모든 문장에, `none`(기본값)은 그리지 않습니다. 접두어는 문장보다 작고 강조색을 쓰며, 문장이 들어가는 경우 접두어 때문에 문장 글자가 작아지지 않습니다. 화자는 `text`가 아니라 `speaker` 필드에 적습니다.
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py render-script VIDEO \
+  --script script.json --out qa.jpg --speaker-prefix on-change
+```
+
 **원본 비율과 가로 구도 유지(v2.2.0)**: 두 모드 모두 `--layout natural`을 지원합니다. `--width`를 생략하면 원본 너비를 유지하며 높이는 실제 내용에 따라 결정됩니다. 너비를 지정해도 같은 비율로 확대·축소합니다.
 
 ```bash
@@ -324,7 +331,7 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 
 - 문장을 고르기 전에 전사본에 화자를 표시하고, 애매한 문장은 화면으로 다시 확인하며, 그래도 확인되지 않으면 쓰지 않습니다.
 - 기본적으로 이미지 한 장에는 한 사람의 말만 담고, 메인 화면도 그 사람이 말하는 장면으로 고릅니다.
-- "질문과 답" 구성을 원하면 먼저 확인하며, 질문과 답은 원본에서 바로 이어져야 합니다. 원본 자막 모드는 화면에 화자를 덧붙일 수 없으므로, 전달할 때 문장마다 화자를 적어 둡니다.
+- "질문과 답" 구성을 원하면 먼저 확인하며, 질문과 답은 원본에서 바로 이어져야 합니다. 원본 자막 모드는 화면에 화자를 덧붙일 수 없으므로, 전달할 때 문장마다 화자를 적어 둡니다. 스크립트 모드에서는 `--speaker-prefix`로 화면에 화자를 표시할 수 있습니다(아래 참고).
 - YouTube 자동 자막은 롤링 방식이라 같은 문장이 반복되고 시작 시간이 이릅니다. 먼저 중복을 정리한 뒤 시간점을 정합니다.
 
 요청할 때 "2인 인터뷰이니 게스트가 이어서 한 말만 골라 줘"처럼 미리 알려 주면 됩니다.
