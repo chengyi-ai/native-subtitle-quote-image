@@ -220,6 +220,15 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
   --script script.json --out output.jpg --aspect 3:4 --width 1440
 ```
 
+**Optional six-line card**: put six reviewed lines with strictly increasing timestamps in `script.json`. At 1080×1440, this preset uses an 870px hero and five contiguous 114px strips, with equal spacing between all six line centers. The existing scripted layout remains the default.
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py render-script VIDEO \
+  --script script.json --out six-line.jpg --six-line-card --aspect 3:4 --width 1080
+```
+
+`--six-line-card` applies only to post-produced scripted subtitles and cannot be combined with `--layout natural` or `--hero-fraction`. The strip sampling center defaults to 60% of source-frame height and can be changed with `--band-center`. Review every source line and rendered image.
+
 **Preserve source proportions and the wide composition (v2.2.0)**: both subtitle modes support `--layout natural`. Without `--width`, the source width is retained and the height follows the stacked content instead of a forced 3:4 canvas. An explicit width uses proportional scaling only.
 
 ```bash
