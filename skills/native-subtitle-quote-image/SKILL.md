@@ -42,7 +42,7 @@ python3 "<SKILL_DIR>/scripts/check_update.py" --json
 
 ## 按任务读参考文件
 
-- **YouTube 等 URL**：先读 [references/yt-dlp-and-transcripts.md](references/yt-dlp-and-transcripts.md)，获取用户有权处理的视频、元数据和辅助时间轴。URL 任务不能在一次公开请求失败后直接退回“只支持本地视频”：若 YouTube 返回机器人登录验证、年龄验证或用户自己的非公开视频限制，先说明原因并取得授权，再按参考文件用 `yt-dlp --cookies-from-browser chrome` 继续。字幕和视频分两条命令下载；视频报 HTTP 403 时按参考文件的格式回退表逐级降级，字幕报 429 时缩减语言并放慢请求，都不要无限重试。
+- **YouTube 等 URL**：先读 [references/yt-dlp-and-transcripts.md](references/yt-dlp-and-transcripts.md)，获取用户有权处理的视频、元数据和辅助时间轴。URL 任务不能在一次公开请求失败后直接退回“只支持本地视频”：若 YouTube 返回机器人登录验证、年龄验证或用户自己的非公开视频限制，先说明原因并取得授权，再按参考文件用 `yt-dlp --cookies-from-browser chrome` 继续。字幕和视频分两条命令下载；下载前用 `yt-dlp -F` 枚举变体并按 AV1 → VP9 → H.264 择优，下载后必须运行 `native_subtitle_stitch.py check-source VIDEO --min-height 720`（解码前 N 秒无错误、分辨率达标）才能继续；视频报 HTTP 403 或自检失败时按参考文件的格式回退表逐级换变体，低于 720p 的级别须先征得用户确认，每次尝试记入 `download-attempts.log`；字幕报 429 时缩减语言并放慢请求，都不要无限重试。
 - **读长视频 → 选题 → 写文章/帖子 → 配图**：读 [references/end-to-end-workflow.md](references/end-to-end-workflow.md)。
 - **台词条太高、间隔太宽、缺少美感**：读 [references/visual-style.md](references/visual-style.md)。
 - **本地短视频且时间点已确定**：直接执行下面的核心流程。

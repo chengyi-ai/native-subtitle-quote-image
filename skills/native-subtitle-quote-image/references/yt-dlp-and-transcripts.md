@@ -132,13 +132,25 @@ yt-dlp --no-playlist \
 
 | 级别 | `-f` 参数 | 说明 |
 | --- | --- | --- |
-| 1 | `bv*[height<=1080][vcodec^=avc1]+ba[ext=m4a]` | 1080p H.264 + AAC，兼容性最好 |
-| 2 | `bv*[height<=1080]+ba` | 1080p 任意编码（VP9、AV1） |
-| 3 | `bv*[height<=720]+ba` | 降到 720p 的分离流 |
-| 4 | `b[height<=1080]` | 已合并的单文件；YouTube 上通常只剩 360p |
-| 5 | `b` | 任意可用的单文件，最后手段 |
+| 1 | `bv*[height<=1080][vcodec^=av01]+ba` | 1080p AV1，优先 |
+| 2 | `bv*[height<=1080][vcodec^=vp09]+ba` | 1080p VP9 |
+| 3 | `bv*[height<=1080][vcodec^=avc1]+ba[ext=m4a]` | 1080p H.264 + AAC，兼容性最好 |
+| 4 | `bv*[height<=1080]+ba` | 1080p 任意编码 |
+| 5 | `bv*[height<=720]+ba` | 降到 720p 的分离流 |
+| 6 | `b[height<=1080]` | 已合并的单文件；YouTube 上通常只剩 360p |
+| 7 | `b` | 任意可用的单文件，最后手段 |
 
-不确定有哪些格式时先运行 `yt-dlp --no-playlist -F "URL"`。降级后要向用户说明实际分辨率；第 5 级仍失败就停止并报告错误，不要继续尝试 extractor 参数。
+下载前先运行 `yt-dlp --no-playlist -F "URL"` 枚举变体，按 AV1 → VP9 → H.264 的顺序择优，并确认列表里有不低于 720p 的视频流。第 5~7 级实际分辨率可能低于 720p：**必须先向用户说明实际分辨率并取得确认，不得静默接受**；用户不接受就停止并报告。
+
+每次下载后立刻自检，通过后才能抽帧、渲染：
+
+```bash
+python3 "<SKILL_DIR>/scripts/native_subtitle_stitch.py" check-source VIDEO --min-height 720
+```
+
+`check-source` 读取分辨率，并用 FFmpeg 解码前 N 秒（`--seconds`，默认 10），出现任何解码错误（例如 h264 mmco 报错）或低于 `--min-height` 就以非零状态退出。不传 `--min-height` 时，低于 720p 只警告。自检失败的文件删除后，换下一级变体重试，每级只试一次。
+
+每次尝试（含 403、自检失败）都追加一行到工作目录的 `download-attempts.log`，记录级别、`-f` 参数、结果（成功 / HTTP 403 / 自检失败 / 用户拒绝低清）和错误摘要。所有级别用尽就停止，把日志内容报告给用户，不要继续尝试 extractor 参数。
 
 分离的视频和音频需要 FFmpeg 合并。原生字幕取帧不依赖音频，但保留带音频的完整源文件方便复核内容。重复执行时复用已有文件，不要无理由重新下载。
 

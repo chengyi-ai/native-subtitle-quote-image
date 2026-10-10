@@ -593,6 +593,76 @@ class DuplicateFrameTests(unittest.TestCase):
             self.assertTrue((tmp_path / "out" / "01_static.jpg").is_file())
 
 
+class CheckSourceTests(unittest.TestCase):
+    @staticmethod
+    def make_video(path, size, seconds=3):
+        subprocess.run(
+            [
+                MODULE.FFMPEG, "-hide_banner", "-loglevel", "error", "-y",
+                "-f", "lavfi", "-i", f"testsrc2=size={size}:rate=10",
+                "-t", str(seconds), "-c:v", "mpeg4", "-pix_fmt", "yuv420p",
+                str(path),
+            ],
+            check=True,
+            capture_output=True,
+        )
+
+    @staticmethod
+    def check(video, *extra):
+        return subprocess.run(
+            [sys.executable, str(SCRIPT), "check-source", str(video), *extra],
+            capture_output=True,
+            text=True,
+        )
+
+    def test_clean_hd_source_passes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            video = Path(tmp) / "hd.mkv"
+            self.make_video(video, "1280x720")
+            proc = self.check(video, "--min-height", "720")
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn("自检通过", proc.stdout)
+            self.assertNotIn("警告", proc.stderr)
+
+    def test_low_resolution_warns_without_failing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            video = Path(tmp) / "low.mkv"
+            self.make_video(video, "640x360")
+            proc = self.check(video)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertIn("警告", proc.stderr)
+
+    def test_min_height_fails_low_resolution(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            video = Path(tmp) / "low.mkv"
+            self.make_video(video, "640x360")
+            proc = self.check(video, "--min-height", "720")
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn("低于 --min-height 720", proc.stderr)
+
+    def test_corrupt_stream_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            video = Path(tmp) / "bad.mkv"
+            self.make_video(video, "1280x720")
+            data = bytearray(video.read_bytes())
+            start = len(data) // 3
+            for index in range(start, start + 4000):
+                data[index] = (data[index] * 7 + 13) % 256
+            video.write_bytes(bytes(data))
+            proc = self.check(video, "--seconds", "3")
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn("解码前 3 秒出现错误", proc.stderr)
+
+    def test_unreadable_file_fails_cleanly(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            video = Path(tmp) / "junk.mp4"
+            video.write_bytes(b"not a video")
+            proc = self.check(video)
+            self.assertNotEqual(proc.returncode, 0)
+            self.assertIn("源视频自检失败", proc.stderr)
+            self.assertNotIn("Traceback", proc.stderr)
+
+
 class CliIntegrationTests(unittest.TestCase):
     def test_sample_band_and_render_with_synthetic_video(self):
         with tempfile.TemporaryDirectory() as tmp:
