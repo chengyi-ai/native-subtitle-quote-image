@@ -77,6 +77,7 @@ python3 -m pip install -r "<SKILL_DIR>/requirements.txt"
 - 默认使用 5 个严格递增的时间点：第一帧是主画面，其余四帧是字幕条。
 - 两种模式每张图最多 7 个时间点（1 个主画面 + 6 个字幕条）；台词更多时拆成多张图，不压缩字幕条。
 - 脚本固定布局的 4 个字幕条时，主画面约占 70%，每条约占 7.5%。原生模式不强制这个比例，第一句和后续字幕必须保持同一缩放倍数；原视频字号不同则保留差异，不重绘文字。两种模式条间距都为 0。
+- 可选 `render-script --six-line-card` 使用 6 个严格递增的时间点：首句画在主画面底部，其余 5 句各占连续字幕条；固定 3:4 布局，1080×1440 时主画面 870px、每条 114px，六句行距一致。原版默认布局不变。
 - 原生模式显式 `--aspect 3:4` 或 `--layout fixed` 时，默认 `--fit crop`：自动识别每句字幕左右边界，对整张拼图统一裁去两侧，最多裁到字幕安全边界，剩余差额留黑边；任一句识别不到字幕边界时不裁切、整图留边。人物偏离中心时用 `--crop-center`（0–1）移动裁切窗口；用户要求不裁画面时用 `--fit pad`。不得单独放大主图来填满。`--hero-fraction` 只调整源主图裁切高度，受真实帧高度限制，不保证占最终含边画布的该比例。脚本模式只有自动布局确实不适用时才传它。
 - 不覆盖已有成品。只有用户明确要替换时才添加 `--overwrite`。
 - 渲染器遇到重复画面会中止：所有时间点画面几乎相同（疑似静态封面视频或画面冻结），或原生模式相邻字幕条几乎相同。先用 `sample` 核对画面并向用户说明；不要为了出图直接加 `--allow-duplicate-frames`，只有用户确认确实需要时才加。
@@ -185,6 +186,16 @@ python3 "<SKILL_DIR>/scripts/native_subtitle_stitch.py" render-script VIDEO \
   --script script.json --out OUTPUT.jpg \
   --aspect 3:4 --width 1440
 ```
+
+可选六句卡（脚本字幕）：准备 6 句已核对、时间点严格递增的 `script.json`，然后运行：
+
+```bash
+python3 "<SKILL_DIR>/scripts/native_subtitle_stitch.py" render-script VIDEO \
+  --script script.json --out six-line.jpg \
+  --six-line-card --aspect 3:4 --width 1080
+```
+
+此预设默认在源画面高度的 60% 处取字幕条；必要时仍可用 `--band-center` 调整。它不接受 `--hero-fraction`，因为主画面高度由五条连续字幕条反推。`--six-line-card` 仅影响后期绘制的脚本字幕，不改变原生字幕模式。
 
 脚本会尝试 macOS、Windows 和 Linux 常见 CJK 字体；台词含谚文时优先尝试韩文字体（macOS AppleSDGothicNeo、Windows Malgun Gothic），`--font` 始终最优先。无法自动找到时，用 `--font /path/to/font.ttc` 指定已获授权的字体。需要调整字幕条在原帧中的垂直采样位置时，使用 `--band-center`；不要把它当作行距参数。
 
