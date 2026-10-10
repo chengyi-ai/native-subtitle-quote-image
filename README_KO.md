@@ -397,6 +397,24 @@ Cookie는 내보내거나 저장·업로드하지 않으며 저장소에도 넣�
 </details>
 
 <details>
+<summary><strong>영상을 가져올 때 403, 429, 봇 확인이 뜨는 경우</strong></summary>
+
+<br>
+
+이 프로젝트는 플랫폼의 요청 제한, 봇 방지, DRM, 유료 장벽, 지역 제한을 우회하는 방법을 제공하지 않습니다. 일반적인 사용에서 자주 만나는 경우는 다음과 같습니다.
+
+| 오류 | 주요 원인 | 해결 방법 |
+| --- | --- | --- |
+| `HTTP Error 403: Forbidden` | 플랫폼 변경 후 오래된 yt-dlp 사용, 또는 JavaScript 런타임 누락 | `python3 -m pip install -U "yt-dlp[default]"`로 업그레이드하고 Deno(또는 Node.js와 `--js-runtimes node`)를 준비 |
+| `HTTP Error 429: Too Many Requests` | 짧은 시간에 요청이 너무 많음 | 잠시 쉬고 한 번에 영상 하나만 처리하며, 대량 다운로드나 IP 변경으로 밀어붙이지 않기 |
+| "로그인하여 봇이 아님을 확인", 연령 확인 | 로그인 세션 필요 | 앞 절의 절차대로, 동의 후 `--cookies-from-browser chrome`으로 본인 세션을 임시로 읽기 |
+| 로그인 후에도 접근 불가 | 회원 전용, 지역 제한, DRM, 다운로드 불허 | 처리 권한이 있는 다른 영상 선택 |
+
+가장 확실한 방법은 로컬 영상입니다. 직접 촬영했거나 허가받았거나 플랫폼이 다운로드를 명시적으로 허용한 영상을 사용하세요. 로컬 모드에는 `yt-dlp`가 전혀 필요 없습니다.
+
+</details>
+
+<details>
 <summary><strong>버전 업데이트 알림</strong></summary>
 
 <br>
