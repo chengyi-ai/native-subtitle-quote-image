@@ -184,6 +184,49 @@ Agent 会先检查来源、字幕类型和候选帧，确定模式后再生成�
 
 <div align="right"><a href="#readme-top">↑ 回到顶部</a></div>
 
+## 可选：小红书图文与商业目标
+
+```text
+使用 $native-subtitle-quote-image，为这段视频生成小红书发布包。
+定位为 AI 时代技术人的实践与管理成长；保留可核对的来源，
+将人物原话和我的解读分开，给出行动清单、一个 CTA 和复盘表。
+没有已验证的产品时以建立信任为目标，不编造价格或收益。
+```
+
+此模式在原有图片渲染流程上补充素材评分、三类图文模板、账号配置、
+证据记录、商业假设及手工复盘。不会自动抓取平台数据、发布或主动私聊。
+个人案例只使用用户明确提供且可公开的资料。
+
+- [工作流与模板](skills/native-subtitle-quote-image/references/xiaohongshu-workflow.md)
+- [账号定位配置示例](skills/native-subtitle-quote-image/assets/xiaohongshu-profile.example.json)
+- [发布包示例（虚构演示，不可发布）](skills/native-subtitle-quote-image/assets/xiaohongshu-pack.example.json)
+
+无需额外依赖，可以先体验草稿导出：
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/xiaohongshu_pack.py \
+  skills/native-subtitle-quote-image/assets/xiaohongshu-pack.example.json \
+  --out-dir output-pack
+```
+
+生成可复制的 `post.md`、`evidence.csv`、`strategy.md`、`review.md`、
+`metrics.csv` 和 `pack.json`。脚本校验结构、逐字引用一致性和明确的核对状态；
+不能代替视频回看或图片视觉检查。`ready` 表示具备交付条件，仍未发布。
+
+### 完整推文迭代记录
+
+每轮保留完整正文、封面和每页图文文稿、标签、CTA、优化点、分项评分依据与总分变化。
+[查看三轮完整推文及评分变化](examples/xiaohongshu-iterations.md)。示例是原创方法建议，未发布、未实测；分数仅为固定标准的编辑自评。
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/xiaohongshu_iterations.py \
+  --history skills/native-subtitle-quote-image/assets/xiaohongshu-iterations.example.json \
+  --report iterations.md
+```
+
+新主题用 `--revision revision-v1.json --history history.json` 初始化；后续按版本号连续追加，
+不覆盖旧推文。脚本验证快照哈希链并计算总分及变化，不自动评判文字质量。
+
 ## 命令行
 
 不经过 Agent 也可以直接跑脚本。下面的 `VIDEO` 换成你的视频路径。

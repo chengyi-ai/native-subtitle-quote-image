@@ -497,3 +497,16 @@ Open an [issue](https://github.com/chengyi-ai/native-subtitle-quote-image/issues
 Code and Skill instructions are released under the [MIT License](LICENSE). The demo images only illustrate the Skill's output; no additional rights are granted for input videos, generated images, or third-party content appearing in them.
 
 <div align="right"><a href="#readme-top">↑ Back to top</a></div>
+
+## Optional: Xiaohongshu publishing and revision history
+
+Create an offline post package with source evidence, separate personal interpretation, an audience profile, a commercial hypothesis and a manual metrics sheet. Keep complete title, body, page copy, tags and CTA for every revision; use a fixed six-dimension editorial rubric to compute score changes. Scores are editorial assessments, not engagement predictions. The original image renderers remain unchanged; nothing is auto-published.
+
+[Workflow (Chinese)](skills/native-subtitle-quote-image/references/xiaohongshu-workflow.md) · [Three complete example revisions (Chinese)](examples/xiaohongshu-iterations.md)
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/xiaohongshu_pack.py \
+  skills/native-subtitle-quote-image/assets/xiaohongshu-pack.example.json --out-dir output-pack
+python3 skills/native-subtitle-quote-image/scripts/xiaohongshu_iterations.py \
+  --history skills/native-subtitle-quote-image/assets/xiaohongshu-iterations.example.json --report iterations.md
+```

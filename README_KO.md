@@ -490,3 +490,16 @@ GitHub Actions가 push와 pull request마다 Python 3.10과 3.13에서 검증합
 코드와 Skill 지침은 [MIT 라이선스](LICENSE)로 공개합니다. 예시 이미지는 결과물의 형태를 보여 주기 위한 것입니다. 입력 영상, 생성 이미지와 그 안에 나오는 제3자 콘텐츠는 이 라이선스로 추가 사용 권한을 얻지 않습니다.
 
 <div align="right"><a href="#readme-top">↑ 맨 위로</a></div>
+
+## 선택 기능: 샤오홍슈 게시물과 버전 기록
+
+출처 근거, 별도의 개인 해석, 독자 설정, 상업적 가설 및 수동 지표표를 포함한 게시물 초안을 만듭니다. 각 버전의 제목, 본문, 페이지 문안, 태그, CTA와 개선점 및 동일 기준의 편집 점수 변화를 보존합니다. 점수는 편집 평가이며 실제 조회수나 전환 성과가 아닙니다. 기존 이미지 렌더러는 그대로 유지되며 자동 게시하지 않습니다.
+
+[Workflow (Chinese)](skills/native-subtitle-quote-image/references/xiaohongshu-workflow.md) · [Three complete example revisions (Chinese)](examples/xiaohongshu-iterations.md)
+
+```bash
+python3 skills/native-subtitle-quote-image/scripts/xiaohongshu_pack.py \
+  skills/native-subtitle-quote-image/assets/xiaohongshu-pack.example.json --out-dir output-pack
+python3 skills/native-subtitle-quote-image/scripts/xiaohongshu_iterations.py \
+  --history skills/native-subtitle-quote-image/assets/xiaohongshu-iterations.example.json --report iterations.md
+```
