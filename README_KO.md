@@ -497,6 +497,8 @@ GitHub Actions가 push와 pull request마다 Python 3.10과 3.13에서 검증합
 
 [Workflow (Chinese)](skills/native-subtitle-quote-image/references/xiaohongshu-workflow.md) · [Three complete example revisions (Chinese)](examples/xiaohongshu-iterations.md)
 
+[세 버전 전체 이미지 및 시각 검토 (중국어)](examples/xiaohongshu-images/README.md). 완성된 카드뉴스에는 실제 표지와 모든 내지 이미지가 포함되어야 하며, 문안만으로 이미지 제공을 대신할 수 없습니다.
+
 ```bash
 python3 skills/native-subtitle-quote-image/scripts/xiaohongshu_pack.py \
   skills/native-subtitle-quote-image/assets/xiaohongshu-pack.example.json --out-dir output-pack

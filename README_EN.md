@@ -504,6 +504,8 @@ Create an offline post package with source evidence, separate personal interpret
 
 [Workflow (Chinese)](skills/native-subtitle-quote-image/references/xiaohongshu-workflow.md) · [Three complete example revisions (Chinese)](examples/xiaohongshu-iterations.md)
 
+[All three image sets and visual review (Chinese)](examples/xiaohongshu-images/README.md). A complete carousel includes its actual cover and every interior image; storyboards alone are incomplete.
+
 ```bash
 python3 skills/native-subtitle-quote-image/scripts/xiaohongshu_pack.py \
   skills/native-subtitle-quote-image/assets/xiaohongshu-pack.example.json --out-dir output-pack

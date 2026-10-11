@@ -218,6 +218,8 @@ python3 skills/native-subtitle-quote-image/scripts/xiaohongshu_pack.py \
 每轮保留完整正文、封面和每页图文文稿、标签、CTA、优化点、分项评分依据与总分变化。
 [查看三轮完整推文及评分变化](examples/xiaohongshu-iterations.md)。示例是原创方法建议，未发布、未实测；分数仅为固定标准的编辑自评。
 
+实际配图另行归档：[三版全部图片与逐张检查记录](examples/xiaohongshu-images/README.md)。完整图文默认交付实际封面与内页，不能以分镜文字代替图片。
+
 ```bash
 python3 skills/native-subtitle-quote-image/scripts/xiaohongshu_iterations.py \
   --history skills/native-subtitle-quote-image/assets/xiaohongshu-iterations.example.json \
