@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "id": "fictional-team-review",
+  "status": "draft",
+  "demonstration": true,
+  "profile": {
+    "positioning": "AI时代技术人的实践与管理成长",
+    "audience": [
+      "工程师",
+      "技术Leader",
+      "产品经理"
+    ],
+    "pillars": [
+      "AI研发实践",
+      "技术转管理",
+      "产品与项目方法"
+    ],
+    "voice": "具体、说人话、有来源，不夸大成果",
+    "public_notes": [],
+    "offers": [],
+    "default_goal": "trust",
+    "default_cta": "收藏这份行动清单，下次遇到同类问题时试一次。",
+    "editorial_limits": {
+      "title_chars": 20,
+      "body_chars": 1000
+    },
+    "note": "示例定位；不代表用户履历、市场验证或平台官方字数限制。"
+  },
+  "evidence": [
+    {
+      "id": "e1",
+      "source_title": "虚构演示访谈（非真实素材）",
+      "source_url": "https://example.com/fictional-interview",
+      "speaker": "示例讲者",
+      "start_seconds": 30,
+      "end_seconds": 45,
+      "kind": "verbatim",
+      "original_text": "先把问题说清楚，再决定用什么工具。",
+      "text": "先把问题说清楚，再决定用什么工具。",
+      "verified": false,
+      "reuse_status": "unknown",
+      "reuse_basis": ""
+    }
+  ],
+  "post": {
+    "titles": [
+      "AI工具选型前，先问这3件事",
+      "团队用了AI，为什么还在返工",
+      "技术Leader的AI实践清单"
+    ],
+    "selected_title": 0,
+    "cover_text": "选工具前，先定义问题",
+    "body": "以下为虚构演示，不能作为人物真实发言发布。\n\n示例讲者说：“先把问题说清楚，再决定用什么工具。”\n\n这段观点适用于工具选型讨论；实际素材需要回看原视频核对上下文。",
+    "interpretation": "我的理解：先约定问题、输入与验收标准，再比较工具。这里是方法建议，不是讲者原话，也不是用户亲历。",
+    "action": "下一次选型会上，先写下：要减少哪种返工、需要哪些输入、用什么结果判断成功。",
+    "tags": [
+      "AI研发",
+      "技术管理",
+      "产品思维"
+    ],
+    "evidence_ids": [
+      "e1"
+    ]
+  },
+  "strategy": {
+    "goal": "trust",
+    "pain_point": "工具选型没有明确验收目标",
+    "scores": null,
+    "score_rationale": "虚构且未经核实，仅演示输出结构，尚不评分。",
+    "cta": "收藏这份行动清单，下次遇到同类问题时试一次。",
+    "success_metric": "有效需求反馈数量",
+    "commercial_hypothesis": "若读者持续询问如何验收，可验证一份公开模板的需求；尚未开售。",
+    "offer": null
+  },
+  "assets": []
+}

@@ -1,0 +1,12 @@
+{
+  "positioning": "AI时代技术人的实践与管理成长",
+  "audience": ["工程师", "技术Leader", "产品经理"],
+  "pillars": ["AI研发实践", "技术转管理", "产品与项目方法"],
+  "voice": "具体、说人话、有来源，不夸大成果",
+  "public_notes": [],
+  "offers": [],
+  "default_goal": "trust",
+  "default_cta": "收藏这份行动清单，下次遇到同类问题时试一次。",
+  "editorial_limits": {"title_chars": 20, "body_chars": 1000},
+  "note": "示例定位；不代表用户履历、市场验证或平台官方字数限制。"
+}
