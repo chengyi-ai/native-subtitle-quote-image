@@ -235,6 +235,8 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 
 `--six-line-card` applies only to post-produced scripted subtitles and cannot be combined with `--layout natural` or `--hero-fraction`. The strip sampling center defaults to 60% of source-frame height and can be changed with `--band-center`. Review every source line and rendered image.
 
+**Fixed-camera sources and `--hero-zoom`**: prefer multi-camera videos with varied shot sizes; fixed single-camera footage (lectures, online-course recordings) is high risk because the six hero images look almost identical. `render` and `render-script` accept an optional `--hero-zoom 1.0,0.9,0.95`: comma-separated per-card hero zoom factors in the range 0.8–1.0, cycled per card, off by default (output unchanged when omitted). It only crops away more of the hero frame and scales it back up; subtitle strips, text, strip spacing and the `--six-line-card` geometry stay the same, and in native mode the crop window never enters the subtitle strip. Because this is crop-and-upscale, a low-resolution source makes the hero blurrier; it is not a real sharpness improvement. `render-script` produces one image and uses the first factor.
+
 **Optional speaker prefix**: for Q&A or conversation cards in script mode, add `"speaker": "Host"` to each line in `script.json` and pass `--speaker-prefix on-change` to draw a prefix such as `Host:` only when the speaker changes. `every` draws it on every line; `none` (default) draws nothing. The prefix is smaller than the line and uses an accent color, and it never makes the line text shrink when the line fits. Keep the speaker in the `speaker` field, not inside `text`.
 
 ```bash

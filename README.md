@@ -236,6 +236,8 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 
 `--six-line-card` 仅用于后期绘制的脚本字幕，不接受 `--layout natural` 或 `--hero-fraction`。字幕条默认从源画面高度的 60% 处取样，可用 `--band-center` 调整；仍须逐句核对来源和逐张检查画面。
 
+**固定机位源与 `--hero-zoom`**：优先选多机位、景别有变化的视频；固定机位视频（大师课、网课式录制）是高风险素材，六张主图容易几乎一样。`render` 与 `render-script` 支持可选的 `--hero-zoom 1.0,0.9,0.95`：逗号分隔的每卡主图缩放系数，范围 0.8–1.0，按卡循环，默认不启用且输出不变。它只裁掉更多主图画面再放大，字幕条、文字、条间距和六句卡几何不变，原生模式的裁切窗口不会进入字幕条。因为是裁切后放大，源视频清晰度不足时主图会更模糊，不等于真实清晰度提升。`render-script` 只输出一张图，取第一个系数。
+
 **可选说话人前缀**：问答、对谈类脚本字幕图，可以在 `script.json` 每句加 `"speaker": "主持人"`，再加 `--speaker-prefix on-change`，只在换人时画出「主持人：」这类前缀；`every` 每句都画，`none`（默认）不画。前缀比台词小一号、用强调色，台词字号不会因为前缀而变小。说话人写在 `speaker` 字段里，不写进 `text`。
 
 ```bash

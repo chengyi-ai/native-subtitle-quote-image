@@ -94,6 +94,7 @@ python3 -m pip install -r "<SKILL_DIR>/requirements.txt"
 - 原生字幕模式保留从画面顶部到 `--band-bottom` 的主图和完整字幕条；不重绘文字。
 - 脚本字幕模式可用 `--frame-top` / `--frame-bottom` 仅裁去不需要的源画面区域，默认保留全帧。先预览边界，不能裁掉人物关键部位；`--band-center` 相对裁切后的画面。
 - `natural` 不与 `--aspect` / `--hero-fraction` 合用；70% 主图验收只适用于脚本固定布局。两种布局都不得非等比拉伸。
+- 选源优先多机位、景别有变化的视频；固定单机位（大师课、网课式录制）是高风险素材，六张主图容易几乎一样。确需使用时可传 `--hero-zoom 1.0,0.9,0.95`（`render` 与 `render-script`）：逗号分隔的每卡主图缩放系数，范围 0.8–1.0，按卡循环，默认不启用且输出不变。它只裁掉更多主图画面再放大，不改字幕条、文字、条间距和 `--six-line-card` 几何；原生模式的裁切窗口不进入字幕条。源清晰度不足时主图会更模糊，不等于真实清晰度提升。`render-script` 只出一张图，取第一个系数。
 
 ```bash
 python3 "<SKILL_DIR>/scripts/native_subtitle_stitch.py" render-script VIDEO \

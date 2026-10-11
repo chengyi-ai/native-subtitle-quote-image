@@ -974,6 +974,133 @@ class CliIntegrationTests(unittest.TestCase):
             self.assertIn("--overwrite", repeated.stderr)
 
 
+def _patterned_frame(size=(640, 360)):
+    frame = Image.new("RGB", size, "#224466")
+    draw = ImageDraw.Draw(frame)
+    for step in range(0, size[0], 40):
+        draw.rectangle((step, 0, step + 19, size[1]), fill="#88aa33")
+    draw.ellipse((200, 60, 440, 260), fill="white")
+    return frame
+
+
+class HeroZoomTests(unittest.TestCase):
+    def render_native(self, name, **kwargs):
+        frame = _patterned_frame()
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            MODULE, "grab_frame", return_value=frame
+        ):
+            out = Path(tmp) / name
+            MODULE.render_one("unused", [0, 1, 2, 3, 4], out, (3, 4), None,
+                              0.78, 0.96, None, layout="natural",
+                              check_duplicates=False, **kwargs)
+            with Image.open(out) as image:
+                return image.convert("RGB")
+
+    def test_parse_accepts_list_and_boundaries(self):
+        self.assertEqual(MODULE.parse_hero_zoom("1.0, 0.9,0.8"), [1.0, 0.9, 0.8])
+
+    def test_parse_rejects_bad_values_in_chinese(self):
+        for text in ("0.79", "1.01", "abc", "1.0,,0.9", "", "nan"):
+            with self.subTest(text=text), self.assertRaises(SystemExit) as ctx:
+                MODULE.parse_hero_zoom(text)
+            self.assertIn("--hero-zoom", str(ctx.exception))
+
+    def test_zoom_cycles_per_card(self):
+        zooms = [1.0, 0.9, 0.95]
+        picked = [MODULE.hero_zoom_for_card(zooms, i) for i in range(5)]
+        self.assertEqual(picked, [1.0, 0.9, 0.95, 1.0, 0.9])
+        self.assertEqual(MODULE.hero_zoom_for_card(None, 3), 1.0)
+
+    def test_command_render_passes_cycled_zoom(self):
+        seen = []
+
+        def fake_render(video, times, out_path, *rest, **kwargs):
+            seen.append(kwargs["hero_zoom"])
+            Image.new("RGB", (20, 20), "red").save(out_path)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "v.mp4").touch()
+            (root / "m.json").write_text(json.dumps({"images": [
+                {"title": f"卡{i}", "times": [1, 2]} for i in range(4)
+            ]}), encoding="utf-8")
+            args = mock.Mock(
+                video=str(root / "v.mp4"), manifest=str(root / "m.json"),
+                out_dir=str(root / "out"), aspect=None, width=None,
+                band_top=0.78, band_bottom=0.96, hero_fraction=None,
+                layout="natural", fit=None, crop_center=None,
+                allow_duplicate_frames=False, overwrite=False,
+                keep_going=False, resume=False, hero_zoom=[1.0, 0.9, 0.95],
+            )
+            with mock.patch.object(MODULE, "video_metadata", return_value=(640, 360, 10)), \
+                    mock.patch.object(MODULE, "render_one", side_effect=fake_render):
+                MODULE.command_render(args)
+        self.assertEqual(seen, [1.0, 0.9, 0.95, 1.0])
+
+    def test_disabled_or_full_zoom_is_pixel_identical(self):
+        base = self.render_native("base.png")
+        full = self.render_native("full.png", hero_zoom=1.0)
+        self.assertEqual(base.tobytes(), full.tobytes())
+
+    def test_native_zoom_keeps_size_and_subtitle_strips(self):
+        base = self.render_native("base.png")
+        zoomed = self.render_native("zoom.png", hero_zoom=0.8)
+        self.assertEqual(zoomed.size, base.size)
+        self.assertNotEqual(zoomed.tobytes(), base.tobytes())
+        # 主图底部的第一条原生字幕条（280–345）与后四条都不得变化。
+        self.assertEqual(
+            zoomed.crop((0, 280, 640, base.height)).tobytes(),
+            base.crop((0, 280, 640, base.height)).tobytes(),
+        )
+
+    def test_native_zoom_in_fixed_layout_keeps_canvas_size(self):
+        frame = _patterned_frame()
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            MODULE, "grab_frame", return_value=frame
+        ):
+            out = Path(tmp) / "fixed.png"
+            MODULE.render_one("unused", [0, 1, 2, 3, 4], out, (3, 4), 300,
+                              0.78, 0.96, None, layout="fixed", hero_zoom=0.85)
+            with Image.open(out) as image:
+                self.assertEqual(image.size, (300, 400))
+
+    def test_scripted_zoom_only_changes_hero(self):
+        frame = _patterned_frame((1280, 720))
+        lines = [{"t": index, "text": f"Line {index}"} for index in range(6)]
+
+        def render(**kwargs):
+            with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+                MODULE, "grab_frame", return_value=frame
+            ), mock.patch.object(MODULE, "draw_scripted_subtitle"):
+                out = Path(tmp) / "s.png"
+                MODULE.scripted_render_one(
+                    "unused", lines, out, (3, 4), 1080, 0.60, None, None, None,
+                    layout="fixed", six_line_card=True, **kwargs)
+                with Image.open(out) as image:
+                    return image.convert("RGB")
+
+        base, zoomed = render(), render(hero_zoom=0.8)
+        self.assertEqual(zoomed.size, (1080, 1440))
+        hero_h = 1440 - 5 * 114
+        self.assertNotEqual(
+            zoomed.crop((0, 0, 1080, hero_h)).tobytes(),
+            base.crop((0, 0, 1080, hero_h)).tobytes(),
+        )
+        self.assertEqual(
+            zoomed.crop((0, hero_h, 1080, 1440)).tobytes(),
+            base.crop((0, hero_h, 1080, 1440)).tobytes(),
+        )
+
+    def test_cli_rejects_out_of_range_zoom(self):
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "render-script", "v.mp4",
+             "--script", "s.json", "--out", "o.jpg", "--hero-zoom", "0.5"],
+            capture_output=True, encoding="utf-8", errors="replace", check=False,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("0.8", proc.stderr)
+
+
 class KeepGoingResumeTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -995,7 +1122,7 @@ class KeepGoingResumeTests(unittest.TestCase):
             out_dir=str(self.out_dir), aspect=None, width=None, band_top=0.78,
             band_bottom=0.96, hero_fraction=None, layout="natural", fit=None,
             crop_center=None, allow_duplicate_frames=False, overwrite=False,
-            keep_going=False, resume=False,
+            keep_going=False, resume=False, hero_zoom=None,
         )
         for key, value in flags.items():
             setattr(args, key, value)
