@@ -1,6 +1,6 @@
 ---
 name: native-subtitle-quote-image
-description: 将本地视频或用户有权处理的在线视频，经过来源获取、文字稿定位、选题选句、精确取帧、紧凑裁切、拼图和逐张质检，制作成 3:4 或保留画面原比例的视频字幕长图。支持两种明确分开的输出：保留画面内已烧录字幕的原生字幕模式，以及把已审核的时间点与台词绘制到真实视频帧上的脚本字幕模式。用户要求原生字幕截图、字幕帧拼图、YouTube 金句长图、台词截图、不重绘字幕、自定义中文台词，或调整主图比例、字幕区域、台词间隔和美感时使用。
+description: 将本地视频或用户有权处理的在线视频，经过来源获取、文字稿定位、选题选句、精确取帧、紧凑裁切、拼图和逐张质检，制作成 3:4 或保留画面原比例的视频字幕长图。支持两种明确分开的输出：保留画面内已烧录字幕的原生字幕模式，以及把已审核的时间点与台词绘制到真实视频帧上的脚本字幕模式。用户要求原生字幕截图、字幕帧拼图、YouTube 金句长图、台词截图、不重绘字幕、自定义中文台词，或调整主图比例、字幕区域、台词间隔和美感时使用。也用于从视频生成小红书图文发布包、个人解读、商业目标和内容复盘。
 ---
 
 # 视频字幕拼图
@@ -46,6 +46,12 @@ python3 "<SKILL_DIR>/scripts/check_update.py" --json
 - **读长视频 → 选题 → 写文章/帖子 → 配图**：读 [references/end-to-end-workflow.md](references/end-to-end-workflow.md)。
 - **台词条太高、间隔太宽、缺少美感**：读 [references/visual-style.md](references/visual-style.md)。
 - **本地短视频且时间点已确定**：直接执行下面的核心流程。
+
+## 可选：小红书个人品牌发布包
+
+用户要求小红书图文、账号内容运营或考虑变现时，读 [references/xiaohongshu-workflow.md](references/xiaohongshu-workflow.md)，按素材发现、证据核对、选题评分、个人解读、图文编排、发布包校验和复盘执行。使用 [assets/xiaohongshu-profile.example.json](assets/xiaohongshu-profile.example.json) 作为可配置账号定位；不要把示例当作用户履历或已开售产品。仅要求字幕拼图时沿用原流程。
+
+发布包中的原创解读单独写明，不画成人物台词；图像仍通过本 Skill 的 `render` / `render-script` 渲染。用户明确要小红书 3:4 时可传 `--aspect 3:4 --width 1080`，保留原比例的要求优先。用 `scripts/xiaohongshu_pack.py` 导出文案、证据表、商业设计和复盘表；该脚本不联网、不生成或发布内容，也不验证引语真假。未核对素材或图片时只交付草稿。每轮定制迭代都按参考文件第 7 节保存完整推文快照、优化点和固定口径评分变化，用 `scripts/xiaohongshu_iterations.py` 追加版本，不覆盖历史。
 
 ## 环境与路径
 
