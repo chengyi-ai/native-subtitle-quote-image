@@ -47,6 +47,7 @@ def main():
         SKILL_DIR / "references" / "yt-dlp-and-transcripts.md",
         SKILL_DIR / "references" / "end-to-end-workflow.md",
         SKILL_DIR / "references" / "visual-style.md",
+        SKILL_DIR / "references" / "troubleshooting.md",
         ROOT / ".github" / "workflows" / "validate.yml",
     ]
     for path in required:
@@ -93,6 +94,7 @@ def main():
         "references/yt-dlp-and-transcripts.md",
         "references/end-to-end-workflow.md",
         "references/visual-style.md",
+        "references/troubleshooting.md",
     ):
         if reference not in skill_text:
             errors.append(f"SKILL.md 未链接参考文件: {reference}")
@@ -106,6 +108,7 @@ def main():
         SKILL_DIR / "references" / "yt-dlp-and-transcripts.md",
         SKILL_DIR / "references" / "end-to-end-workflow.md",
         SKILL_DIR / "references" / "visual-style.md",
+        SKILL_DIR / "references" / "troubleshooting.md",
     ]
     for document in public_docs:
         text = document.read_text(encoding="utf-8") if document.is_file() else ""

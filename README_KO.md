@@ -458,6 +458,7 @@ GitHub Actions가 push와 pull request마다 Python 3.10과 3.13에서 검증합
 - [영상 링크, yt-dlp, Deno/Node, 타임라인](skills/native-subtitle-quote-image/references/yt-dlp-and-transcripts.md)
 - [주제 선택, 프레임 확인, 렌더링과 검수](skills/native-subtitle-quote-image/references/end-to-end-workflow.md)
 - [주 이미지와 자막 띠의 시각 구성](skills/native-subtitle-quote-image/references/visual-style.md)
+- [문제 해결: 자주 나오는 오류와 출력 문제](skills/native-subtitle-quote-image/references/troubleshooting.md)(중국어)
 
 ## 피드백과 기여
 

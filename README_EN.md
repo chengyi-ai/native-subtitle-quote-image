@@ -465,6 +465,7 @@ On systems whose default encoding is not UTF-8 (for example GBK on Simplified Ch
 - [URL acquisition, yt-dlp, Deno/Node, and timelines](skills/native-subtitle-quote-image/references/yt-dlp-and-transcripts.md)
 - [End-to-end topic selection, frame calibration, rendering, and QA](skills/native-subtitle-quote-image/references/end-to-end-workflow.md)
 - [Compact hero, subtitle-strip density, and visual QA rules](skills/native-subtitle-quote-image/references/visual-style.md)
+- [Troubleshooting: common errors and rendering problems](skills/native-subtitle-quote-image/references/troubleshooting.md) (Chinese)
 
 ## Feedback and contributing
 

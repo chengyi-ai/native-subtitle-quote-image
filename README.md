@@ -466,6 +466,7 @@ Windows 等默认编码不是 UTF-8 的系统（如简体中文 Windows 的 GBK�
 - [URL 获取、yt-dlp、Deno/Node 与文字时间轴](skills/native-subtitle-quote-image/references/yt-dlp-and-transcripts.md)
 - [从读视频、选题到交付的完整工作流](skills/native-subtitle-quote-image/references/end-to-end-workflow.md)
 - [紧凑型主图、字幕条密度与视觉质检](skills/native-subtitle-quote-image/references/visual-style.md)
+- [排错手册：常见报错与出图问题的排查](skills/native-subtitle-quote-image/references/troubleshooting.md)
 
 ## 反馈与贡献
 

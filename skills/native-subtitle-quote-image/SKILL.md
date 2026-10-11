@@ -45,6 +45,7 @@ python3 "<SKILL_DIR>/scripts/check_update.py" --json
 - **YouTube 等 URL**：先读 [references/yt-dlp-and-transcripts.md](references/yt-dlp-and-transcripts.md)，获取用户有权处理的视频、元数据和辅助时间轴。URL 任务不能在一次公开请求失败后直接退回“只支持本地视频”：若 YouTube 返回机器人登录验证、年龄验证或用户自己的非公开视频限制，先说明原因并取得授权，再按参考文件用 `yt-dlp --cookies-from-browser chrome` 继续。字幕和视频分两条命令下载；下载前用 `yt-dlp -F` 枚举变体并按 AV1 → VP9 → H.264 择优，下载后必须运行 `native_subtitle_stitch.py check-source VIDEO --min-height 720`（解码前 N 秒无错误、分辨率达标）才能继续；视频报 HTTP 403 或自检失败时按参考文件的格式回退表逐级换变体，低于 720p 的级别须先征得用户确认，每次尝试记入 `download-attempts.log`；字幕报 429 时缩减语言并放慢请求，都不要无限重试。
 - **读长视频 → 选题 → 写文章/帖子 → 配图**：读 [references/end-to-end-workflow.md](references/end-to-end-workflow.md)。
 - **台词条太高、间隔太宽、缺少美感**：读 [references/visual-style.md](references/visual-style.md)。
+- **报错、出图异常或结果不对**：先查 [references/troubleshooting.md](references/troubleshooting.md)，按「症状 → 先查什么 → 怎么处理」逐项排查。
 - **本地短视频且时间点已确定**：直接执行下面的核心流程。
 
 ## 环境与路径
@@ -126,6 +127,13 @@ python3 "<SKILL_DIR>/scripts/native_subtitle_stitch.py" sample VIDEO \
 ### 2. 选主题与稳定帧
 
 一张图只表达一个连贯观点。候选句需要语义递进，并且每个时间点都能回到视频验证。避免空字幕、同句重复、字幕切换残影、转场、黑帧、广告贴片、播放器 UI 和人物闭眼。
+
+主图（每张图的第一个时间点）由你来选，渲染器不识别人脸、也不自动挑帧，manifest 或 `lines` JSON 写的是哪个时间点就用哪一帧：
+
+- **固定主图时间点**：选定后把时间点直接写进 manifest 或 JSON，渲染前用 `sample -t 时间点 --around 0.8` 回看前后画面，确认主体是说这句话的人、构图完整、没有闭眼或动作模糊。
+- **高风险素材**：两人并排的宽景对谈、主持人与嘉宾同框的节目，主图很容易落在主持人或画面另一侧的人身上。优先找说话人的单人近景；整段都没有时，向用户说明，不要拿错的人凑数。
+- **固定机位素材**：一套图的主图容易几乎一模一样。先用 `sample` 看整段有没有景别或动作变化，尽量为每张图挑不同的画面；源视频只有一个机位时，向用户说明这是素材限制。
+- **第三方水印、台标、角标**：默认保留，不遮盖、不模糊、不涂抹，交给用户决定。用户在意时只能换时间点，或在用户同意后调整裁切位置避开。
 
 ### 多人对话与访谈
 
