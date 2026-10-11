@@ -1,0 +1,199 @@
+{
+  "review_date": "2026-10-11",
+  "method": "内置 imagegen；逐张视觉检查 + PNG 解码/比例/哈希校验",
+  "count": 12,
+  "images": [
+    {
+      "version": 1,
+      "page": 1,
+      "file": "v1-01.png",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "77a3b07f03df0b82f5df3e93c4a6f01f62adccbdfc3e2e154b92d000874fd91e",
+      "visual_review": {
+        "heading_and_body": "已逐张查看，主要标题及正文与逐页文稿一致；换行和强调由排版调整",
+        "page_number": "正确",
+        "cropping": "主要文字和页码完整，无越界",
+        "readability": "大字、浅底深字，未在真实手机或小红书客户端实测",
+        "source": "AI生成原创方法卡，非视频原生字幕或人物引语"
+      },
+      "status": "reviewed_unpublished"
+    },
+    {
+      "version": 1,
+      "page": 2,
+      "file": "v1-02.png",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "e8fc2af49efe278eaf23d73755ffc1d03c1204e77f3c3c56a9bd81746ed1dcd9",
+      "visual_review": {
+        "heading_and_body": "已逐张查看，主要标题及正文与逐页文稿一致；换行和强调由排版调整",
+        "page_number": "正确",
+        "cropping": "主要文字和页码完整，无越界",
+        "readability": "大字、浅底深字，未在真实手机或小红书客户端实测",
+        "source": "AI生成原创方法卡，非视频原生字幕或人物引语"
+      },
+      "status": "reviewed_unpublished"
+    },
+    {
+      "version": 1,
+      "page": 3,
+      "file": "v1-03.png",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "5adcd0e9e8e924f3d2984657a36ad3dfafee980499f28d9c19d5071635415ec4",
+      "visual_review": {
+        "heading_and_body": "已逐张查看，主要标题及正文与逐页文稿一致；换行和强调由排版调整",
+        "page_number": "正确",
+        "cropping": "主要文字和页码完整，无越界",
+        "readability": "大字、浅底深字，未在真实手机或小红书客户端实测",
+        "source": "AI生成原创方法卡，非视频原生字幕或人物引语"
+      },
+      "status": "reviewed_unpublished"
+    },
+    {
+      "version": 2,
+      "page": 1,
+      "file": "v2-01.png",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "e74ac4a10ce8d77d8eaca6820b50ecd5b8e846c394ca132a89c8902868c4237e",
+      "visual_review": {
+        "heading_and_body": "已逐张查看，主要标题及正文与逐页文稿一致；换行和强调由排版调整",
+        "page_number": "正确",
+        "cropping": "主要文字和页码完整，无越界",
+        "readability": "大字、浅底深字，未在真实手机或小红书客户端实测",
+        "source": "AI生成原创方法卡，非视频原生字幕或人物引语"
+      },
+      "status": "reviewed_unpublished"
+    },
+    {
+      "version": 2,
+      "page": 2,
+      "file": "v2-02.png",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "c8bc4c094ee678330438511e73ac3811155e72f0e6c3f1cd88fb3c2d4a10839b",
+      "visual_review": {
+        "heading_and_body": "已逐张查看，主要标题及正文与逐页文稿一致；换行和强调由排版调整",
+        "page_number": "正确",
+        "cropping": "主要文字和页码完整，无越界",
+        "readability": "大字、浅底深字，未在真实手机或小红书客户端实测",
+        "source": "AI生成原创方法卡，非视频原生字幕或人物引语"
+      },
+      "status": "reviewed_unpublished"
+    },
+    {
+      "version": 2,
+      "page": 3,
+      "file": "v2-03.png",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "c0c4ea8d107acfd7349648ffe8f1f9afaeb5ef751d7c6408e43fb2188693e735",
+      "visual_review": {
+        "heading_and_body": "已逐张查看，主要标题及正文与逐页文稿一致；换行和强调由排版调整",
+        "page_number": "正确",
+        "cropping": "主要文字和页码完整，无越界",
+        "readability": "大字、浅底深字，未在真实手机或小红书客户端实测",
+        "source": "AI生成原创方法卡，非视频原生字幕或人物引语"
+      },
+      "status": "reviewed_unpublished"
+    },
+    {
+      "version": 2,
+      "page": 4,
+      "file": "v2-04.png",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "5e1b803d29ec4216844127ca6d86066cd3c1c2e1577b94cc99ec9618dc1587b8",
+      "visual_review": {
+        "heading_and_body": "已逐张查看，主要标题及正文与逐页文稿一致；换行和强调由排版调整",
+        "page_number": "正确",
+        "cropping": "主要文字和页码完整，无越界",
+        "readability": "大字、浅底深字，未在真实手机或小红书客户端实测",
+        "source": "AI生成原创方法卡，非视频原生字幕或人物引语"
+      },
+      "status": "reviewed_unpublished"
+    },
+    {
+      "version": 3,
+      "page": 1,
+      "file": "v3-01.png",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "1c392971544b39c85135ea5e68e43c3cf87c27701023a33d10d3c2cec78e3882",
+      "visual_review": {
+        "heading_and_body": "已逐张查看，主要标题及正文与逐页文稿一致；换行和强调由排版调整",
+        "page_number": "正确",
+        "cropping": "主要文字和页码完整，无越界",
+        "readability": "大字、浅底深字，未在真实手机或小红书客户端实测",
+        "source": "AI生成原创方法卡，非视频原生字幕或人物引语"
+      },
+      "status": "reviewed_unpublished"
+    },
+    {
+      "version": 3,
+      "page": 2,
+      "file": "v3-02.png",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "09a769f805ba6605da0db29e355c2a06bf13ef22b888a449b155efab2f9b7275",
+      "visual_review": {
+        "heading_and_body": "已逐张查看，主要标题及正文与逐页文稿一致；换行和强调由排版调整",
+        "page_number": "正确",
+        "cropping": "主要文字和页码完整，无越界",
+        "readability": "大字、浅底深字，未在真实手机或小红书客户端实测",
+        "source": "AI生成原创方法卡，非视频原生字幕或人物引语"
+      },
+      "status": "reviewed_unpublished"
+    },
+    {
+      "version": 3,
+      "page": 3,
+      "file": "v3-03.png",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "339f20e9db2aaea386ff00f8280cfe02a3ae1b8b6c170f54af821f1b7cd883a3",
+      "visual_review": {
+        "heading_and_body": "已逐张查看，主要标题及正文与逐页文稿一致；换行和强调由排版调整",
+        "page_number": "正确",
+        "cropping": "主要文字和页码完整，无越界",
+        "readability": "大字、浅底深字，未在真实手机或小红书客户端实测",
+        "source": "AI生成原创方法卡，非视频原生字幕或人物引语"
+      },
+      "status": "reviewed_unpublished"
+    },
+    {
+      "version": 3,
+      "page": 4,
+      "file": "v3-04.png",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "f8313ed2f69bc6f695fe0f6cf912153fbf4a2d94ae61e5e4bc17576d6934065c",
+      "visual_review": {
+        "heading_and_body": "已逐张查看，主要标题及正文与逐页文稿一致；换行和强调由排版调整",
+        "page_number": "正确",
+        "cropping": "主要文字和页码完整，无越界",
+        "readability": "大字、浅底深字，未在真实手机或小红书客户端实测",
+        "source": "AI生成原创方法卡，非视频原生字幕或人物引语"
+      },
+      "status": "reviewed_unpublished"
+    },
+    {
+      "version": 3,
+      "page": 5,
+      "file": "v3-05.png",
+      "width": 1086,
+      "height": 1448,
+      "sha256": "1bd8be89a8671faa565ed9d3cf4b68be2f5676e2cfd743b49dd2d89268d0f350",
+      "visual_review": {
+        "heading_and_body": "已逐张查看，主要标题及正文与逐页文稿一致；换行和强调由排版调整",
+        "page_number": "正确",
+        "cropping": "主要文字和页码完整，无越界",
+        "readability": "大字、浅底深字，未在真实手机或小红书客户端实测",
+        "source": "AI生成原创方法卡，非视频原生字幕或人物引语"
+      },
+      "status": "reviewed_unpublished"
+    }
+  ]
+}
