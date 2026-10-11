@@ -51,7 +51,7 @@ python3 "<SKILL_DIR>/scripts/check_update.py" --json
 
 用户要求小红书图文、账号内容运营或考虑变现时，读 [references/xiaohongshu-workflow.md](references/xiaohongshu-workflow.md)，按素材发现、证据核对、选题评分、个人解读、图文编排、发布包校验和复盘执行。使用 [assets/xiaohongshu-profile.example.json](assets/xiaohongshu-profile.example.json) 作为可配置账号定位；不要把示例当作用户履历或已开售产品。仅要求字幕拼图时沿用原流程。
 
-发布包中的原创解读单独写明，不画成人物台词；图像仍通过本 Skill 的 `render` / `render-script` 渲染。用户明确要小红书 3:4 时可传 `--aspect 3:4 --width 1080`，保留原比例的要求优先。用 `scripts/xiaohongshu_pack.py` 导出文案、证据表、商业设计和复盘表；该脚本不联网、不生成或发布内容，也不验证引语真假。未核对素材或图片时只交付草稿。每轮定制迭代都按参考文件第 7 节保存完整推文快照、优化点和固定口径评分变化，用 `scripts/xiaohongshu_iterations.py` 追加版本，不覆盖历史。
+发布包中的原创解读单独写明，不画成人物台词；图像仍通过本 Skill 的 `render` / `render-script` 渲染。用户明确要小红书 3:4 时可传 `--aspect 3:4 --width 1080`，保留原比例的要求优先。用 `scripts/xiaohongshu_pack.py` 导出文案、证据表、商业设计和复盘表；该脚本不联网、不生成或发布内容，也不验证引语真假。未核对素材或图片时只交付草稿。每轮定制迭代都按参考文件第 7 节保存完整推文快照、实际封面与全部内页图片、逐张 QA、用户可打开的网页入口、优化点和固定口径评分变化，用 `scripts/xiaohongshu_iterations.py` 追加版本，不覆盖历史。
 
 ## 环境与路径
 
