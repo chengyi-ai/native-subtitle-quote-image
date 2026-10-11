@@ -41,6 +41,13 @@ def main():
         VERSION_FILE,
         OPENAI_YAML,
         SKILL_DIR / "requirements.txt",
+        SKILL_DIR / "scripts" / "xiaohongshu_pack.py",
+        SKILL_DIR / "scripts" / "xiaohongshu_iterations.py",
+        SKILL_DIR / "assets" / "xiaohongshu-iterations.example.json",
+        ROOT / "examples" / "xiaohongshu-iterations.md",
+        SKILL_DIR / "references" / "xiaohongshu-workflow.md",
+        SKILL_DIR / "assets" / "xiaohongshu-profile.example.json",
+        SKILL_DIR / "assets" / "xiaohongshu-pack.example.json",
         RENDERER,
         ENV_CHECK,
         UPDATE_CHECK,
@@ -93,6 +100,7 @@ def main():
         "references/yt-dlp-and-transcripts.md",
         "references/end-to-end-workflow.md",
         "references/visual-style.md",
+        "references/xiaohongshu-workflow.md",
     ):
         if reference not in skill_text:
             errors.append(f"SKILL.md 未链接参考文件: {reference}")
@@ -102,6 +110,7 @@ def main():
         README_EN,
         README_KO,
         ROOT / "examples" / "README.md",
+        SKILL_DIR / "references" / "xiaohongshu-workflow.md",
         SKILL_FILE,
         SKILL_DIR / "references" / "yt-dlp-and-transcripts.md",
         SKILL_DIR / "references" / "end-to-end-workflow.md",
@@ -180,7 +189,7 @@ def main():
         if "render-script" not in text:
             errors.append(f"{document.relative_to(ROOT)} 未说明脚本字幕模式")
 
-    for script in (RENDERER, ENV_CHECK, UPDATE_CHECK):
+    for script in (RENDERER, ENV_CHECK, UPDATE_CHECK, SKILL_DIR / "scripts" / "xiaohongshu_pack.py", SKILL_DIR / "scripts" / "xiaohongshu_iterations.py"):
         if script.is_file():
             try:
                 compile(script.read_text(encoding="utf-8"), str(script), "exec")
