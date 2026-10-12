@@ -236,6 +236,8 @@ python3 "<SKILL_DIR>/scripts/native_subtitle_stitch.py" render-script VIDEO \
 - 启用前缀时每句都必须有 `speaker`；前缀比台词小一号、用强调色，字号不随台词缩小，台词放不下时只缩台词。
 - 说话人名称同样要核对：确认不了身份时写“主持人”“嘉宾”等角色，不猜人名。单人独白不用前缀。
 
+**可选金句强调（仅脚本模式）**：`--emphasize-line last`（最后一句）或 `--emphasize-line N`（从 1 起算）给一句台词加暖色、加粗描边和轻微半透明底衬；也可在 `script.json` 某句写 `"emphasis": true`。默认不启用，输出不变；行号越界会报错。仍属后期绘制，需按脚本模式标注；原生模式不支持，不得重绘原字幕。图内不绘制卡片小标题，本 Skill 无此功能。
+
 脚本会尝试 macOS、Windows 和 Linux 常见 CJK 字体；台词含谚文时优先尝试韩文字体（macOS AppleSDGothicNeo、Windows Malgun Gothic），`--font` 始终最优先。无法自动找到时，用 `--font /path/to/font.ttc` 指定已获授权的字体。需要调整字幕条在原帧中的垂直采样位置时，使用 `--band-center`；不要把它当作行距参数。
 
 ## 逐张质检与有界返工

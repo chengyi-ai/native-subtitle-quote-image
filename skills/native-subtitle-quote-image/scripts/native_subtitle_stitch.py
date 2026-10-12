@@ -267,6 +267,8 @@ def load_subtitle_font(path, size, text):
 # 说话人前缀：比台词小一号、用强调色，与台词共用基线。
 SPEAKER_PREFIX_SCALE = 0.68
 SPEAKER_PREFIX_FILL = (255, 214, 74)
+EMPHASIS_FILL = (255, 196, 64)
+EMPHASIS_PLATE_ALPHA = 110
 SPEAKER_MODES = ("none", "on-change", "every")
 
 
@@ -276,7 +278,8 @@ def speaker_label(speaker, text):
 
 
 def draw_scripted_subtitle(
-    image, text, y_center, font_path, font_size, max_width, speaker=None
+    image, text, y_center, font_path, font_size, max_width, speaker=None,
+    emphasis=False,
 ):
     draw = ImageDraw.Draw(image)
     minimum = max(12, round(font_size * 0.55))
@@ -295,7 +298,7 @@ def draw_scripted_subtitle(
     box = None
     for size in range(font_size, minimum - 1, -2):
         font = load_subtitle_font(font_path, size, text)
-        stroke = max(2, size // 14)
+        stroke = max(3, size // 10) if emphasis else max(2, size // 14)
         candidate_box = draw.textbbox(
             (0, 0), text, font=font, stroke_width=stroke
         )
@@ -324,11 +327,26 @@ def draw_scripted_subtitle(
             stroke_width=label_stroke,
             stroke_fill="black",
         )
+    if emphasis:
+        # 轻微半透明底衬，只铺在这一行的文字范围内。
+        pad = max(4, size // 4)
+        left = x + box[0] - label_width - pad
+        right = x + box[2] + pad
+        top = y + box[1] - pad // 2
+        bottom = y + box[3] + pad // 2
+        plate = Image.new("RGBA", image.size, (0, 0, 0, 0))
+        ImageDraw.Draw(plate).rounded_rectangle(
+            (left, top, right, bottom), radius=pad,
+            fill=(0, 0, 0, EMPHASIS_PLATE_ALPHA),
+        )
+        blended = Image.alpha_composite(image.convert("RGBA"), plate).convert(image.mode)
+        image.paste(blended)
+        draw = ImageDraw.Draw(image)
     draw.text(
         (x, y),
         text,
         font=font,
-        fill="white",
+        fill=EMPHASIS_FILL if emphasis else "white",
         stroke_width=stroke,
         stroke_fill="black",
     )
@@ -363,6 +381,11 @@ def normalize_script_lines(data, duration, speaker_mode="none"):
         if "\n" in text or "\r" in text:
             raise SystemExit(f"lines[{index}].text 必须是单行台词")
         entry = {"t": seconds, "text": text}
+        emphasis = item.get("emphasis")
+        if emphasis is not None:
+            if not isinstance(emphasis, bool):
+                raise SystemExit(f"lines[{index}].emphasis 必须是 true 或 false")
+            entry["emphasis"] = emphasis
         speaker = item.get("speaker")
         if speaker is not None:
             if not isinstance(speaker, str) or not speaker.strip():
@@ -379,6 +402,34 @@ def normalize_script_lines(data, duration, speaker_mode="none"):
         normalized.append(entry)
         previous = seconds
     return normalized
+
+
+def apply_emphasis(lines, target):
+    """target 为 None 或 "last" / 1 起算的行号；写入 emphasis 字段，JSON 里显式标注的行保留。"""
+    if target is None:
+        return lines
+    if target == "last":
+        index = len(lines) - 1
+    else:
+        index = target - 1
+        if not 0 <= index < len(lines):
+            raise SystemExit(
+                f"--emphasize-line {target} 超出范围；台词共 {len(lines)} 句（行号从 1 起算）"
+            )
+    lines[index]["emphasis"] = True
+    return lines
+
+
+def parse_emphasize_line(value):
+    if value == "last":
+        return value
+    try:
+        number = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError("须为 last 或从 1 起算的行号") from None
+    if number < 1:
+        raise argparse.ArgumentTypeError("须为 last 或从 1 起算的行号")
+    return number
 
 
 def apply_speaker_prefix(lines, mode):
@@ -668,6 +719,7 @@ def scripted_render_one(
             hero, lines[0]["text"], hero.height - strip_height // 2,
             font_path, base_font, round(out_width * 0.92),
             speaker=lines[0].get("prefix"),
+            emphasis=lines[0].get("emphasis", False),
         )
         parts = [hero]
         for line, frame in zip(lines[1:], frames[1:]):
@@ -679,6 +731,7 @@ def scripted_render_one(
                 strip, line["text"], strip.height // 2,
                 font_path, base_font, round(out_width * 0.92),
                 speaker=line.get("prefix"),
+                emphasis=line.get("emphasis", False),
             )
             parts.append(strip)
         save_stack(parts, out_path)
@@ -719,6 +772,7 @@ def scripted_render_one(
         min(base_font, max(16, round(first_strip_height * 0.62))),
         round(out_width * 0.92),
         speaker=lines[0].get("prefix"),
+        emphasis=lines[0].get("emphasis", False),
     )
 
     strips = []
@@ -744,6 +798,7 @@ def scripted_render_one(
             min(base_font, max(16, round(strip.height * 0.62))),
             round(out_width * 0.92),
             speaker=line.get("prefix"),
+            emphasis=line.get("emphasis", False),
         )
         strips.append(strip)
 
@@ -1109,6 +1164,7 @@ def command_render_script(args):
         ) from None
     lines = normalize_script_lines(data, duration, args.speaker_prefix)
     apply_speaker_prefix(lines, args.speaker_prefix)
+    apply_emphasis(lines, args.emphasize_line)
     if args.speaker_prefix == "none" and any("speaker" in line for line in lines):
         print("提示: 台词含 speaker 字段，但未启用 --speaker-prefix，画面不显示说话人")
     if args.six_line_card:
@@ -1278,6 +1334,11 @@ def main():
         "--speaker-prefix", choices=SPEAKER_MODES, default="none",
         help="说话人前缀：none 不显示（默认）；on-change 换人时显示；every 每句显示。"
              "需在台词 JSON 每句写 speaker",
+    )
+    scripted.add_argument(
+        "--emphasize-line", type=parse_emphasize_line, metavar="N|last",
+        help="强调指定行（暖色、加粗描边、轻微底衬）：last 为最后一句，数字从 1 起算；"
+             "默认不强调。也可在台词 JSON 的某句写 \"emphasis\": true。仅脚本模式",
     )
     scripted.add_argument(
         "--allow-duplicate-frames",

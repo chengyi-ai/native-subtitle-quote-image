@@ -244,6 +244,8 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
   --script script.json --out qa.jpg --speaker-prefix on-change
 ```
 
+**선택: 핵심 문장 강조**: 스크립트 모드에서 `--emphasize-line last`(마지막 문장) 또는 `--emphasize-line 3`(1부터 세는 3번째 문장)을 쓰면 해당 문장을 따뜻한 색, 굵은 외곽선, 옅은 반투명 배경으로 그립니다. `script.json`의 문장에 `"emphasis": true`를 써도 됩니다. 기본값은 꺼짐(출력 변화 없음)이며 범위를 벗어난 번호는 오류입니다. 스크립트 모드 전용이며 원본 자막 모드는 자막을 다시 그리지 않습니다.
+
 **원본 비율과 가로 구도 유지(v2.2.0)**: 두 모드 모두 `--layout natural`을 지원합니다. `--width`를 생략하면 원본 너비를 유지하며 높이는 실제 내용에 따라 결정됩니다. 너비를 지정해도 같은 비율로 확대·축소합니다.
 
 ```bash

@@ -434,7 +434,7 @@ class SixLineCardTests(unittest.TestCase):
             ]}), encoding="utf-8")
             args = mock.Mock(
                 video=str(video), script=str(script), six_line_card=True,
-                speaker_prefix="none",
+                speaker_prefix="none", emphasize_line=None,
             )
             with mock.patch.object(MODULE, "video_metadata", return_value=(1080, 870, 10)):
                 with self.assertRaisesRegex(SystemExit, "恰好 6 句"):
@@ -558,6 +558,94 @@ class SpeakerPrefixTests(unittest.TestCase):
         ]
         self.assertGreaterEqual(min(lit), 0)
         self.assertLessEqual(max(lit) - min(lit), 552)
+
+
+class EmphasisTests(unittest.TestCase):
+    def lit(self, image, color):
+        return [
+            (x, y) for x in range(image.width) for y in range(image.height)
+            if image.getpixel((x, y)) == color
+        ]
+
+    def test_default_output_is_unchanged(self):
+        a = Image.new("RGB", (900, 120), "#404040")
+        b = a.copy()
+        MODULE.draw_scripted_subtitle(a, "Hello world", 60, None, 48, 820)
+        MODULE.draw_scripted_subtitle(b, "Hello world", 60, None, 48, 820, emphasis=False)
+        self.assertEqual(a.tobytes(), b.tobytes())
+        self.assertFalse(self.lit(a, MODULE.EMPHASIS_FILL))
+
+    def test_emphasis_uses_warm_fill_and_backing_plate(self):
+        image = Image.new("RGB", (900, 120), "#808080")
+        MODULE.draw_scripted_subtitle(
+            image, "Hello world", 60, None, 48, 820, emphasis=True
+        )
+        self.assertTrue(self.lit(image, MODULE.EMPHASIS_FILL))
+        self.assertFalse(self.lit(image, (255, 255, 255)))
+        # 底衬压暗了文字附近原本的灰底。
+        self.assertLess(sum(image.getpixel((450, 12))), sum((128, 128, 128)) + 1)
+        plate_pixels = [
+            image.getpixel((x, 60)) for x in range(image.width)
+            if image.getpixel((x, 60)) not in (MODULE.EMPHASIS_FILL, (0, 0, 0), (128, 128, 128))
+        ]
+        self.assertTrue(any(p[0] < 128 for p in plate_pixels))
+
+    def test_apply_emphasis_targets(self):
+        lines = [{"t": i, "text": str(i)} for i in range(4)]
+        MODULE.apply_emphasis(lines, None)
+        self.assertFalse(any("emphasis" in line for line in lines))
+        MODULE.apply_emphasis(lines, "last")
+        self.assertEqual([line.get("emphasis") for line in lines], [None, None, None, True])
+        lines = [{"t": i, "text": str(i)} for i in range(4)]
+        MODULE.apply_emphasis(lines, 2)
+        self.assertEqual([line.get("emphasis") for line in lines], [None, True, None, None])
+
+    def test_out_of_range_line_is_rejected(self):
+        lines = [{"t": i, "text": str(i)} for i in range(3)]
+        for bad in (4, 99):
+            with self.assertRaisesRegex(SystemExit, "超出范围"):
+                MODULE.apply_emphasis(lines, bad)
+
+    def test_json_emphasis_must_be_boolean(self):
+        data = {"lines": [{"t": 1, "text": "a", "emphasis": True}, {"t": 2, "text": "b"}]}
+        lines = MODULE.normalize_script_lines(data, 10)
+        self.assertTrue(lines[0]["emphasis"])
+        data["lines"][1]["emphasis"] = "yes"
+        with self.assertRaisesRegex(SystemExit, "emphasis 必须是"):
+            MODULE.normalize_script_lines(data, 10)
+
+    def test_six_line_card_passes_emphasis_only_to_target(self):
+        frames = [Image.new("RGB", (1080, 870), "#303030") for _ in range(6)]
+        lines = [{"t": i, "text": f"Line {i}"} for i in range(6)]
+        MODULE.apply_emphasis(lines, "last")
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            MODULE, "grab_frame", side_effect=frames
+        ), mock.patch.object(MODULE, "draw_scripted_subtitle") as draw_text:
+            MODULE.scripted_render_one(
+                "unused", lines, Path(tmp) / "o.jpg", (3, 4), 1080, 0.60, None,
+                None, None, six_line_card=True,
+            )
+        flags = [call.kwargs["emphasis"] for call in draw_text.call_args_list]
+        self.assertEqual(flags, [False] * 5 + [True])
+
+    def test_cli_rejects_bad_value_before_video_io(self):
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "render-script", "unused.mp4",
+             "--script", "unused.json", "--out", "unused.jpg",
+             "--emphasize-line", "0"],
+            capture_output=True, encoding="utf-8", errors="replace",
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertNotIn("Traceback", proc.stderr)
+
+    def test_native_render_has_no_emphasis_option(self):
+        proc = subprocess.run(
+            [sys.executable, str(SCRIPT), "render", "unused.mp4",
+             "--manifest", "m.json", "--out-dir", "o", "--emphasize-line", "last"],
+            capture_output=True, encoding="utf-8", errors="replace",
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("unrecognized arguments", proc.stderr)
 
 
 class SideCropTests(unittest.TestCase):

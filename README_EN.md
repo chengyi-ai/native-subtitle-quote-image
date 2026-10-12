@@ -244,6 +244,8 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
   --script script.json --out qa.jpg --speaker-prefix on-change
 ```
 
+**Optional highlight line**: in script mode, `--emphasize-line last` (final line) or `--emphasize-line 3` (3rd line, 1-based) draws one line in a warm color with a heavier outline and a light translucent backing plate, so the quotable line stands out. You can also set `"emphasis": true` on a line in `script.json`. Off by default (output unchanged); an out-of-range number is an error. Script mode only; native mode never redraws subtitles.
+
 **Preserve source proportions and the wide composition (v2.2.0)**: both subtitle modes support `--layout natural`. Without `--width`, the source width is retained and the height follows the stacked content instead of a forced 3:4 canvas. An explicit width uses proportional scaling only.
 
 ```bash

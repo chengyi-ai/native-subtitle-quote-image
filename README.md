@@ -245,6 +245,8 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
   --script script.json --out qa.jpg --speaker-prefix on-change
 ```
 
+**可选金句强调**：脚本字幕图可用 `--emphasize-line last`（最后一句）或 `--emphasize-line 3`（第 3 句，从 1 起算）给一句台词加暖色、加粗描边和轻微半透明底衬，方便截图搬走；也可在 `script.json` 的某句写 `"emphasis": true`。默认不启用，输出不变；行号越界会报错。只用于脚本模式，原生字幕模式不会重绘任何字幕。
+
 **保留人物原比例与横屏构图（v2.2.0）**：两种字幕模式都支持 `--layout natural`。不指定宽度时保留源宽度，图片高度按实际内容计算，不强制 3:4；指定 `--width` 也只做等比缩放。
 
 ```bash
