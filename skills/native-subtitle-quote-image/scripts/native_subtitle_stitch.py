@@ -544,22 +544,50 @@ def scale_to_width(image, width):
     return image.resize((width, height), Image.Resampling.LANCZOS)
 
 
-def stack_parts(parts):
+DIVIDER_HEIGHT = 2
+DIVIDER_COLOR = (96, 96, 96)
+MAX_STRIP_GAP = 8
+
+
+def layout_gaps(strip_count, strip_gap=0, hero_divider="none"):
+    """部件之间插入的 (高度, 颜色) 列表；只新增背景像素，不覆盖任何画面。"""
+    gaps = []
+    if strip_count:
+        gaps.append((DIVIDER_HEIGHT, DIVIDER_COLOR) if hero_divider == "line" else (0, "black"))
+        gaps.extend([(strip_gap, "black")] * (strip_count - 1))
+    return gaps
+
+
+def stack_parts(parts, gaps=None):
     if any(part.width != parts[0].width for part in parts):
         raise SystemExit("源帧宽度不一致；请先检查视频旋转或分辨率变化")
-    canvas = Image.new("RGB", (parts[0].width, sum(p.height for p in parts)), "black")
+    gaps = gaps or [(0, "black")] * (len(parts) - 1)
+    total = sum(p.height for p in parts) + sum(h for h, _ in gaps)
+    canvas = Image.new("RGB", (parts[0].width, total), "black")
     y = 0
-    for part in parts:
+    for index, part in enumerate(parts):
         canvas.paste(part, (0, y))
         y += part.height
+        if index < len(gaps) and gaps[index][0]:
+            canvas.paste(gaps[index][1], (0, y, part.width, y + gaps[index][0]))
+            y += gaps[index][0]
     return canvas
 
 
-def save_stack(parts, out_path):
-    canvas = stack_parts(parts)
+def gap_note(strip_gap, hero_divider):
+    notes = []
+    if hero_divider == "line":
+        notes.append(f"主图与字幕条间 {DIVIDER_HEIGHT}px 分隔线")
+    if strip_gap:
+        notes.append(f"条间缝隙 {strip_gap}px")
+    return "，".join(notes) or "条间距 0"
+
+
+def save_stack(parts, out_path, gaps=None, note="条间距 0"):
+    canvas = stack_parts(parts, gaps)
     canvas.save(out_path, quality=93, subsampling=0)
     print(f"完成: {out_path} ({canvas.width}x{canvas.height})")
-    print("原比例布局: 仅裁切与等比缩放，高度随内容计算，条间距 0")
+    print(f"原比例布局: 仅裁切与等比缩放，高度随内容计算，{note}")
 
 
 def subtitle_extent(band):
@@ -642,7 +670,7 @@ def fit_fixed_canvas(stack, extents, size, fit="crop", crop_center=0.5):
 def render_one(
     video, times, out_path, aspect, out_width, top, bottom, hero_fraction,
     layout="natural", fit="crop", crop_center=0.5, check_duplicates=False,
-    hero_zoom=1.0,
+    hero_zoom=1.0, strip_gap=0, hero_divider="none",
 ):
     times = normalize_times(times)
     frames = [grab_frame(video, seconds) for seconds in times]
@@ -666,7 +694,8 @@ def render_one(
         zoomed.paste(scene, (0, 0))
         hero = zoomed
     # 先拼源像素，再对整张画布缩放：所有原生字幕只经历同一个几何变换。
-    source_stack = stack_parts([hero, *bands])
+    # 缝隙与分隔线是新增的背景像素，随整图一起缩放，不覆盖字幕条。
+    source_stack = stack_parts([hero, *bands], layout_gaps(len(bands), strip_gap, hero_divider))
     if layout == "natural":
         width = out_width or first.width
         canvas = scale_to_width(source_stack, width)
@@ -679,7 +708,7 @@ def render_one(
         )
     canvas.save(out_path, quality=93, subsampling=0)
     print(f"完成: {out_path} ({canvas.width}x{canvas.height})")
-    print(f"原生字幕: 整图统一等比缩放，字幕条 {len(bands)} 个，条间距 0")
+    print(f"原生字幕: 整图统一等比缩放，字幕条 {len(bands)} 个，{gap_note(strip_gap, hero_divider)}")
     if layout == "fixed":
         print(f"固定画布: {fit_note}")
 
@@ -700,6 +729,8 @@ def scripted_render_one(
     check_duplicates=False,
     six_line_card=False,
     hero_zoom=1.0,
+    strip_gap=0,
+    hero_divider="none",
 ):
     frames = [
         crop_band(grab_frame(video, line["t"]), frame_top, frame_bottom)[0]
@@ -734,7 +765,10 @@ def scripted_render_one(
                 emphasis=line.get("emphasis", False),
             )
             parts.append(strip)
-        save_stack(parts, out_path)
+        save_stack(
+            parts, out_path, layout_gaps(len(parts) - 1, strip_gap, hero_divider),
+            gap_note(strip_gap, hero_divider),
+        )
         return
     aw, ah = aspect
     out_height = round(out_width * ah / aw)
@@ -744,11 +778,15 @@ def scripted_render_one(
         # Keep the strip pitch proportional when --width changes.
         hero_height, strip_height, hero_fraction = six_line_geometry(out_width, out_height)
         strip_heights = [strip_height] * strip_count
+        gaps = layout_gaps(strip_count)
         base_font = font_size or max(24, round(out_width * 0.0587))
     else:
         hero_fraction = choose_hero_fraction(strip_count, hero_fraction)
         hero_height = round(out_height * hero_fraction)
-        remaining = out_height - hero_height
+        gaps = layout_gaps(strip_count, strip_gap, hero_divider)
+        remaining = out_height - hero_height - sum(h for h, _ in gaps)
+        if remaining < strip_count * 16:
+            raise SystemExit("缝隙与分隔线占用过多高度；请减小 --strip-gap 或 --hero-fraction")
         base_strip = remaining // strip_count
         strip_heights = [base_strip] * strip_count
         strip_heights[-1] += remaining - sum(strip_heights)
@@ -805,14 +843,18 @@ def scripted_render_one(
     canvas = Image.new("RGB", (out_width, out_height), "black")
     canvas.paste(hero, (0, 0))
     y = hero_height
-    for strip in strips:
+    for index, strip in enumerate(strips):
+        height, color = gaps[index]
+        if height:
+            canvas.paste(color, (0, y, out_width, y + height))
+            y += height
         canvas.paste(strip, (0, y))
         y += strip.height
     canvas.save(out_path, quality=93, subsampling=0)
     print(f"完成: {out_path} ({out_width}x{out_height})")
     print(
         f"脚本模式: 主画面 {hero_fraction:.1%}，"
-        f"字幕条 {strip_count} 个，条间距 0"
+        f"字幕条 {strip_count} 个，{gap_note(strip_gap, hero_divider)}"
     )
 
 
@@ -1122,6 +1164,8 @@ def command_render(args):
                 0.5 if args.crop_center is None else args.crop_center,
                 check_duplicates=not args.allow_duplicate_frames,
                 hero_zoom=hero_zoom_for_card(args.hero_zoom, index - 1),
+                strip_gap=args.strip_gap,
+                hero_divider=args.hero_divider,
             )
         except (Exception, SystemExit) as exc:
             if not keep_going:
@@ -1192,6 +1236,8 @@ def command_render_script(args):
         check_duplicates=not args.allow_duplicate_frames,
         six_line_card=args.six_line_card,
         hero_zoom=hero_zoom_for_card(args.hero_zoom, 0),
+        strip_gap=args.strip_gap,
+        hero_divider=args.hero_divider,
     )
 
 
@@ -1294,6 +1340,14 @@ def main():
         action="store_true",
         help="续跑：跳过已存在且有效的图，只渲染缺失或失败的卡（隐含 --keep-going）",
     )
+    render.add_argument(
+        "--strip-gap", type=int, default=0,
+        help="字幕条之间的黑色呼吸缝像素，0–8，默认 0；只新增背景像素，不覆盖画面",
+    )
+    render.add_argument(
+        "--hero-divider", choices=("none", "line"), default="none",
+        help="主图与字幕条之间插入 2px 细分隔线（line），默认 none；插入而非叠加，不改原画面",
+    )
     render.set_defaults(func=command_render)
 
     scripted = sub.add_parser(
@@ -1347,6 +1401,14 @@ def main():
     )
     scripted.add_argument("--overwrite", action="store_true")
     scripted.add_argument("--tmp-dir", help=TMP_DIR_HELP)
+    scripted.add_argument(
+        "--strip-gap", type=int, default=0,
+        help="字幕条之间的黑色呼吸缝像素，0–8，默认 0；只新增背景像素，不覆盖画面",
+    )
+    scripted.add_argument(
+        "--hero-divider", choices=("none", "line"), default="none",
+        help="主图与字幕条之间插入 2px 细分隔线（line），默认 none；插入而非叠加，不改原画面",
+    )
     scripted.set_defaults(func=command_render_script)
 
     args = parser.parse_args()
@@ -1375,6 +1437,13 @@ def main():
             raise SystemExit("--crop-center 只用于 --fit crop")
     if hasattr(args, "aspect") and args.aspect is None:
         args.aspect = parse_aspect("3:4")
+    if hasattr(args, "strip_gap"):
+        if not 0 <= args.strip_gap <= MAX_STRIP_GAP:
+            raise SystemExit(f"--strip-gap 必须在 0–{MAX_STRIP_GAP} 之间")
+        if getattr(args, "six_line_card", False) and (
+            args.strip_gap or args.hero_divider != "none"
+        ):
+            raise SystemExit("--six-line-card 使用固定几何，不接受 --strip-gap 或 --hero-divider")
     if getattr(args, "six_line_card", False):
         if args.layout != "fixed" or not math.isclose(args.aspect[0] / args.aspect[1], 0.75):
             raise SystemExit("--six-line-card 只支持固定 3:4 布局")
