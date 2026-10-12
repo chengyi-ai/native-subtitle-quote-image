@@ -582,13 +582,19 @@ class EmphasisTests(unittest.TestCase):
         )
         self.assertTrue(self.lit(image, MODULE.EMPHASIS_FILL))
         self.assertFalse(self.lit(image, (255, 255, 255)))
-        # 底衬压暗了文字附近原本的灰底。
-        self.assertLess(sum(image.getpixel((450, 12))), sum((128, 128, 128)) + 1)
-        plate_pixels = [
-            image.getpixel((x, 60)) for x in range(image.width)
-            if image.getpixel((x, 60)) not in (MODULE.EMPHASIS_FILL, (0, 0, 0), (128, 128, 128))
-        ]
-        self.assertTrue(any(p[0] < 128 for p in plate_pixels))
+        # 底衬把文字周围的灰底按固定透明度压暗，成片出现同一个压暗色。
+        alpha = MODULE.EMPHASIS_PLATE_ALPHA
+        plate = round(128 * (255 - alpha) / 255)
+        self.assertGreater(len(self.lit(image, (plate,) * 3)), 1000)
+
+    def test_emphasis_plate_does_not_dim_speaker_prefix(self):
+        image = Image.new("RGB", (900, 120), "#808080")
+        MODULE.draw_scripted_subtitle(
+            image, "Hello world", 60, None, 48, 820, speaker="Host", emphasis=True
+        )
+        # 前缀画在底衬之上，仍保持原本的强调色。
+        self.assertTrue(self.lit(image, MODULE.SPEAKER_PREFIX_FILL))
+        self.assertTrue(self.lit(image, MODULE.EMPHASIS_FILL))
 
     def test_apply_emphasis_targets(self):
         lines = [{"t": i, "text": str(i)} for i in range(4)]

@@ -315,20 +315,8 @@ def draw_scripted_subtitle(
     text_height = box[3] - box[1]
     x = (image.width - label_width - text_width) // 2 - box[0] + label_width
     y = y_center - text_height // 2 - box[1]
-    if label:
-        # 默认锚点在字形上沿，基线 = y + ascent；前缀对齐到台词基线。
-        baseline = y + font.getmetrics()[0]
-        label_y = baseline - label_font.getmetrics()[0]
-        draw.text(
-            (x + box[0] - label_width - label_box[0], label_y),
-            label,
-            font=label_font,
-            fill=SPEAKER_PREFIX_FILL,
-            stroke_width=label_stroke,
-            stroke_fill="black",
-        )
     if emphasis:
-        # 轻微半透明底衬，只铺在这一行的文字范围内。
+        # 轻微半透明底衬，只铺在这一行的文字范围内；先画底衬，避免压暗前缀和台词。
         pad = max(4, size // 4)
         left = x + box[0] - label_width - pad
         right = x + box[2] + pad
@@ -342,6 +330,18 @@ def draw_scripted_subtitle(
         blended = Image.alpha_composite(image.convert("RGBA"), plate).convert(image.mode)
         image.paste(blended)
         draw = ImageDraw.Draw(image)
+    if label:
+        # 默认锚点在字形上沿，基线 = y + ascent；前缀对齐到台词基线。
+        baseline = y + font.getmetrics()[0]
+        label_y = baseline - label_font.getmetrics()[0]
+        draw.text(
+            (x + box[0] - label_width - label_box[0], label_y),
+            label,
+            font=label_font,
+            fill=SPEAKER_PREFIX_FILL,
+            stroke_width=label_stroke,
+            stroke_fill="black",
+        )
     draw.text(
         (x, y),
         text,
