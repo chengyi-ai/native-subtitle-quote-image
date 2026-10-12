@@ -238,6 +238,8 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 
 **固定机位源与 `--hero-zoom`**：优先选多机位、景别有变化的视频；固定机位视频（大师课、网课式录制）是高风险素材，六张主图容易几乎一样。`render` 与 `render-script` 支持可选的 `--hero-zoom 1.0,0.9,0.95`：逗号分隔的每卡主图缩放系数，范围 0.8–1.0，按卡循环，默认不启用且输出不变。它只裁掉更多主图画面再放大，字幕条、文字、条间距和六句卡几何不变，原生模式的裁切窗口不会进入字幕条。因为是裁切后放大，源视频清晰度不足时主图会更模糊，不等于真实清晰度提升。`render-script` 只输出一张图，取第一个系数。
 
+**呼吸缝 `--strip-gap` 与分隔线 `--hero-divider`**：`render` 与 `render-script` 支持可选的 `--strip-gap N`（字幕条之间插入 N 像素黑色缝隙，0–8，默认 0）和 `--hero-divider line`（主图与字幕条之间插入 2px 细分隔线，默认 none）。二者只新增背景像素，不覆盖、不重绘原画面，原生字幕仍只经历整图统一缩放；固定画布总尺寸不变，字幕条相应变矮；与 `--six-line-card` 不兼容。
+
 **可选说话人前缀**：问答、对谈类脚本字幕图，可以在 `script.json` 每句加 `"speaker": "主持人"`，再加 `--speaker-prefix on-change`，只在换人时画出「主持人：」这类前缀；`every` 每句都画，`none`（默认）不画。前缀比台词小一号、用强调色，台词字号不会因为前缀而变小。说话人写在 `speaker` 字段里，不写进 `text`。
 
 ```bash

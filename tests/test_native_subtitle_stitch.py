@@ -374,6 +374,71 @@ class NaturalGeometryTests(unittest.TestCase):
                 self.assertNotIn("Traceback", proc.stderr)
 
 
+class BreathingGapTests(unittest.TestCase):
+    def render_native(self, **options):
+        frame = Image.new("RGB", (640, 360), "#336699")
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            MODULE, "grab_frame", return_value=frame
+        ):
+            out = Path(tmp) / "native.jpg"
+            MODULE.render_one("unused", [0, 1, 2, 3, 4], out, (3, 4), None,
+                              0.78, 0.96, None, layout="natural", **options)
+            with Image.open(out) as rendered:
+                return rendered.convert("RGB")
+
+    def test_native_defaults_unchanged(self):
+        self.assertEqual(self.render_native().size, (640, 605))
+
+    def test_native_gap_and_divider_insert_background_rows(self):
+        rendered = self.render_native(strip_gap=4, hero_divider="line")
+        # 四条字幕条之间 3 个缝隙 + 1 条 2px 分隔线。
+        self.assertEqual(rendered.size, (640, 605 + 3 * 4 + 2))
+        self.assertEqual(rendered.getpixel((320, 345 + 1)), (96, 96, 96))
+        self.assertLess(max(rendered.getpixel((320, 345 + 2 + 65 + 1))), 8)
+
+    def test_stack_parts_keeps_part_pixels_and_fills_gaps_with_background(self):
+        parts = [Image.new("RGB", (20, 10), color) for color in ("red", "green", "blue")]
+        stacked = MODULE.stack_parts(parts, MODULE.layout_gaps(2, 3, "line"))
+        self.assertEqual(stacked.size, (20, 30 + 2 + 3))
+        self.assertEqual(stacked.getpixel((5, 5)), (255, 0, 0))
+        self.assertEqual(stacked.getpixel((5, 10)), MODULE.DIVIDER_COLOR)
+        self.assertEqual(stacked.getpixel((5, 12 + 5)), (0, 128, 0))
+        self.assertEqual(stacked.getpixel((5, 22 + 1)), (0, 0, 0))
+        self.assertEqual(stacked.getpixel((5, 25 + 5)), (0, 0, 255))
+
+    def test_scripted_fixed_gap_keeps_canvas_size(self):
+        frame = Image.new("RGB", (1280, 720), "#336699")
+        lines = [{"t": i, "text": f"Line {i}"} for i in range(5)]
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            MODULE, "grab_frame", return_value=frame
+        ), mock.patch.object(MODULE, "draw_scripted_subtitle"):
+            out = Path(tmp) / "script.jpg"
+            MODULE.scripted_render_one("unused", lines, out, (3, 4), 600,
+                                       0.88, None, None, None,
+                                       strip_gap=4, hero_divider="line")
+            with Image.open(out) as rendered:
+                self.assertEqual(rendered.size, (600, 800))
+
+    def test_cli_rejects_invalid_gap_options_before_io(self):
+        for command, options, message in [
+            ("render", ["--strip-gap", "9"], "--strip-gap"),
+            ("render", ["--strip-gap", "-1"], "--strip-gap"),
+            ("render-script", ["--six-line-card", "--strip-gap", "2"], "固定几何"),
+            ("render-script", ["--six-line-card", "--hero-divider", "line"], "固定几何"),
+        ]:
+            with self.subTest(options=options):
+                extra = (["--manifest", "unused.json", "--out-dir", "unused"]
+                         if command == "render"
+                         else ["--script", "unused.json", "--out", "unused.jpg"])
+                proc = subprocess.run(
+                    [sys.executable, str(SCRIPT), command, "unused.mp4", *extra, *options],
+                    capture_output=True, encoding="utf-8", errors="replace",
+                )
+                self.assertNotEqual(proc.returncode, 0)
+                self.assertIn(message, proc.stderr)
+                self.assertNotIn("Traceback", proc.stderr)
+
+
 class SixLineCardTests(unittest.TestCase):
     def test_geometry_and_rendered_strips(self):
         self.assertEqual(MODULE.six_line_geometry(1080, 1440), (870, 114, 870 / 1440))
