@@ -349,6 +349,21 @@ You can say it up front: "This is a two-person interview; use only consecutive l
 
 </details>
 
+<details>
+<summary><strong>Checking hero-frame composition</strong></summary>
+
+<br>
+
+The renderer does not detect faces or pick frames; the Agent chooses which frame becomes the hero. To avoid cropped heads, chins touching the subtitle strip, or faces pushed to one side, the Skill eyeballs every hero frame after rendering (after cropping, for fixed-ratio crop layouts):
+
+- The top of the head is not cut off, with roughly 8% or more of the hero height above it.
+- The chin sits roughly 5% or more above the bottom of the hero (the top of the first subtitle strip).
+- The face center falls roughly within 35–60% of the hero height and 35–65% of its width.
+
+If a frame fails, the Agent first searches about 1.5 seconds before and after the original timestamp. If nothing better turns up, it uses the closest frame and notes in the delivery which hero frame misses which item. These ratios are visual guidelines, not programmatic checks, and need no extra face-detection dependency. If you want a close-up or deliberately off-center framing, just tell the Agent.
+
+</details>
+
 <div align="right"><a href="#readme-top">↑ Back to top</a></div>
 
 ## More details
