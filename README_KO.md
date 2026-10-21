@@ -486,6 +486,10 @@ GitHub Actions가 push와 pull request마다 Python 3.10과 3.13에서 검증합
 - [주 이미지와 자막 띠의 시각 구성](skills/native-subtitle-quote-image/references/visual-style.md)
 - [문제 해결: 자주 나오는 오류와 출력 문제](skills/native-subtitle-quote-image/references/troubleshooting.md)(중국어)
 
+## 감사의 말
+
+- [AtomGit](https://atomgit.com/chengyi-ai/native-subtitle-quote-image): 중국 내에서 이 프로젝트를 호스팅해 중국 본토 사용자가 프로젝트와 Release를 더 빠르게 이용할 수 있도록 돕습니다.
+
 ## 피드백과 기여
 
 버그나 제안은 [Issues](https://github.com/chengyi-ai/native-subtitle-quote-image/issues)에 남기거나(렌더링 문제라면 문제가 생긴 페이지의 스크린샷을 첨부해 주세요) 소셜 미디어로 작성자에게 알려 주세요. 새 issue는 에이전트가 실현 가능성을 먼저 평가하고, 조건을 충족하면 에이전트가 코드 작성·테스트 후 PR을 올립니다. 메인테이너가 검토해 병합하면 자동으로 배포됩니다. 전체 흐름은 [에이전트 워크플로 안내](docs/agent-workflow.md)(중국어)를 참고하세요.

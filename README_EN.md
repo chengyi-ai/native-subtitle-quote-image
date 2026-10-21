@@ -493,6 +493,10 @@ On systems whose default encoding is not UTF-8 (for example GBK on Simplified Ch
 - [Compact hero, subtitle-strip density, and visual QA rules](skills/native-subtitle-quote-image/references/visual-style.md)
 - [Troubleshooting: common errors and rendering problems](skills/native-subtitle-quote-image/references/troubleshooting.md) (Chinese)
 
+## Acknowledgements
+
+- [AtomGit](https://atomgit.com/chengyi-ai/native-subtitle-quote-image): hosts a mirror of this project in China, giving users in mainland China faster access to the code and Release downloads.
+
 ## Feedback and contributing
 
 Open an [issue](https://github.com/chengyi-ai/native-subtitle-quote-image/issues) for bugs or ideas (for rendering problems, attach a screenshot of the page that went wrong), or reach the author on social media. New issues are assessed by an agent; feasible requests are implemented, tested and opened as PRs by the agent, then reviewed and merged by a maintainer before an automatic release. See the [agent workflow guide](docs/agent-workflow.md) (Chinese).

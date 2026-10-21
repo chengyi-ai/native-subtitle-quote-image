@@ -494,6 +494,10 @@ Windows 等默认编码不是 UTF-8 的系统（如简体中文 Windows 的 GBK�
 - [紧凑型主图、字幕条密度与视觉质检](skills/native-subtitle-quote-image/references/visual-style.md)
 - [排错手册：常见报错与出图问题的排查](skills/native-subtitle-quote-image/references/troubleshooting.md)
 
+## 鸣谢
+
+- [AtomGit](https://atomgit.com/chengyi-ai/native-subtitle-quote-image)：在国内托管本项目，帮助中国大陆用户更快访问项目与下载 Release。
+
 ## 反馈与贡献
 
 欢迎在 [Issues](https://github.com/chengyi-ai/native-subtitle-quote-image/issues) 提问题或建议，渲染问题请附上出问题那一页的截图；也可以在社交媒体上直接找作者反馈。新 issue 会由 Agent 自动评估可行性，符合条件的需求由 Agent 编码、测试并提交 PR，维护者审查合并后自动发版。完整流程见 [Agent 工作流说明](docs/agent-workflow.md)。
