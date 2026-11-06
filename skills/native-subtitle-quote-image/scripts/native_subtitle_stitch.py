@@ -29,6 +29,8 @@ MAX_TIMES_PER_IMAGE = 7
 # 真实访谈相邻句子的整帧差异通常在 5% 以上；静态封面重编码后接近 0。
 DUPLICATE_PIXEL_RATIO = 0.005
 DIFF_LEVEL = 12
+# --duplicate-ratio 的取值上限；再高就会把正常的相邻句子也判成重复。
+MAX_DUPLICATE_PIXEL_RATIO = 0.2
 # 抽帧临时文件目录环境变量；--tmp-dir 优先，都未设置时用系统临时目录。
 TMP_DIR_ENV = "NSQI_TMP_DIR"
 # 由 main() 根据 --tmp-dir / 环境变量设置；None 表示系统默认。
@@ -154,19 +156,34 @@ def changed_ratio(a, b, width=160):
     return diff.histogram()[255] / (width * height)
 
 
-def ensure_distinct_frames(frames, times, bands=None):
-    """拦截静态封面视频：所有时间点画面相同，或原生字幕条重复。"""
+def ensure_distinct_frames(frames, times, bands=None, ratio=None):
+    """拦截重复帧：静态封面、任意两帧几乎相同，或原生字幕条重复。
+
+    ratio 为缩略图上“明显变化像素占比”的下限，低于它就算同一画面；
+    None 表示用默认值 DUPLICATE_PIXEL_RATIO。
+    """
     if len(frames) < 2:
         return
-    if all(changed_ratio(frames[0], frame) < DUPLICATE_PIXEL_RATIO for frame in frames[1:]):
+    ratio = DUPLICATE_PIXEL_RATIO if ratio is None else ratio
+    if all(changed_ratio(frames[0], frame) < ratio for frame in frames[1:]):
         listed = "、".join(f"{t:.2f}s" for t in times)
         raise SystemExit(
             f"所有时间点（{listed}）取到的画面几乎相同，源视频可能是静态封面图或画面冻结。"
             "请先用 sample 检查画面；确认要这样出图时加 --allow-duplicate-frames。"
         )
+    # 并非整段冻结，但单机位素材常出现“只有两三帧几乎一样”：逐对比对。
+    for left in range(len(frames) - 1):
+        for right in range(left + 1, len(frames)):
+            if changed_ratio(frames[left], frames[right]) < ratio:
+                raise SystemExit(
+                    f"{times[left]:.2f}s 与 {times[right]:.2f}s 的画面几乎相同（变化低于 {ratio:.1%}），"
+                    "成图里会出现重复帧。请用 sample 换一个景别或机位不同的时间点；"
+                    "固定机位源可用 --hero-zoom 缓解。确认要这样出图时加 --allow-duplicate-frames，"
+                    "或用 --duplicate-ratio 调低阈值。"
+                )
     if bands:
         for index in range(1, len(bands)):
-            if changed_ratio(bands[index - 1], bands[index]) < DUPLICATE_PIXEL_RATIO:
+            if changed_ratio(bands[index - 1], bands[index]) < ratio:
                 raise SystemExit(
                     f"{times[index - 1]:.2f}s 与 {times[index]:.2f}s 的字幕条几乎相同，"
                     "可能是同一句字幕重复或这段画面没有字幕。请用 sample 或 band 核对时间点；"
@@ -670,7 +687,7 @@ def fit_fixed_canvas(stack, extents, size, fit="crop", crop_center=0.5):
 def render_one(
     video, times, out_path, aspect, out_width, top, bottom, hero_fraction,
     layout="natural", fit="crop", crop_center=0.5, check_duplicates=False,
-    hero_zoom=1.0, strip_gap=0, hero_divider="none",
+    hero_zoom=1.0, strip_gap=0, hero_divider="none", duplicate_ratio=None,
 ):
     times = normalize_times(times)
     frames = [grab_frame(video, seconds) for seconds in times]
@@ -678,7 +695,7 @@ def render_one(
     first_band, _, subtitle_bottom = crop_band(first, top, bottom)
     bands = [crop_band(frame, top, bottom)[0] for frame in frames[1:]]
     if check_duplicates:
-        ensure_distinct_frames(frames, times, [first_band, *bands])
+        ensure_distinct_frames(frames, times, [first_band, *bands], duplicate_ratio)
     hero_source_height = subtitle_bottom
     if hero_fraction is not None:
         # 显式比例只决定源画面裁切窗口，不能改变第一句字幕的缩放倍数。
@@ -731,13 +748,16 @@ def scripted_render_one(
     hero_zoom=1.0,
     strip_gap=0,
     hero_divider="none",
+    duplicate_ratio=None,
 ):
     frames = [
         crop_band(grab_frame(video, line["t"]), frame_top, frame_bottom)[0]
         for line in lines
     ]
     if check_duplicates:
-        ensure_distinct_frames(frames, [line["t"] for line in lines])
+        ensure_distinct_frames(
+            frames, [line["t"] for line in lines], ratio=duplicate_ratio
+        )
     first_frame = frames[0]
     out_width = out_width or (first_frame.width if layout == "natural" else 1440)
     if layout == "natural":
@@ -1166,6 +1186,7 @@ def command_render(args):
                 hero_zoom=hero_zoom_for_card(args.hero_zoom, index - 1),
                 strip_gap=args.strip_gap,
                 hero_divider=args.hero_divider,
+                duplicate_ratio=args.duplicate_ratio,
             )
         except (Exception, SystemExit) as exc:
             if not keep_going:
@@ -1238,10 +1259,16 @@ def command_render_script(args):
         hero_zoom=hero_zoom_for_card(args.hero_zoom, 0),
         strip_gap=args.strip_gap,
         hero_divider=args.hero_divider,
+        duplicate_ratio=args.duplicate_ratio,
     )
 
 
 TMP_DIR_HELP = f"抽帧临时文件目录（默认系统临时目录，也可用环境变量 {TMP_DIR_ENV}）"
+DUPLICATE_RATIO_HELP = (
+    f"重复帧判定阈值：缩略图上明显变化的像素占比低于此值就算同一画面，"
+    f"范围 0–{MAX_DUPLICATE_PIXEL_RATIO}，默认 {DUPLICATE_PIXEL_RATIO}。"
+    "调高更严（容易拦下相似帧），调低更宽松；0 等于只拦完全一致的帧"
+)
 
 
 def main():
@@ -1326,8 +1353,9 @@ def main():
     render.add_argument(
         "--allow-duplicate-frames",
         action="store_true",
-        help="跳过重复画面检查（默认遇到静态封面或重复字幕条会中止）",
+        help="跳过重复画面检查（默认遇到静态封面、相似主图或重复字幕条会中止）",
     )
+    render.add_argument("--duplicate-ratio", type=float, help=DUPLICATE_RATIO_HELP)
     render.add_argument("--overwrite", action="store_true")
     render.add_argument("--tmp-dir", help=TMP_DIR_HELP)
     render.add_argument(
@@ -1397,8 +1425,9 @@ def main():
     scripted.add_argument(
         "--allow-duplicate-frames",
         action="store_true",
-        help="跳过重复画面检查（默认遇到静态封面或重复字幕条会中止）",
+        help="跳过重复画面检查（默认遇到静态封面、相似主图或重复字幕条会中止）",
     )
+    scripted.add_argument("--duplicate-ratio", type=float, help=DUPLICATE_RATIO_HELP)
     scripted.add_argument("--overwrite", action="store_true")
     scripted.add_argument("--tmp-dir", help=TMP_DIR_HELP)
     scripted.add_argument(
@@ -1462,6 +1491,13 @@ def main():
         and not 0.25 <= args.hero_fraction <= 0.85
     ):
         raise SystemExit("--hero-fraction 必须在 0.25–0.85 之间")
+    if getattr(args, "duplicate_ratio", None) is not None:
+        if not 0 <= args.duplicate_ratio <= MAX_DUPLICATE_PIXEL_RATIO:
+            raise SystemExit(
+                f"--duplicate-ratio 必须在 0–{MAX_DUPLICATE_PIXEL_RATIO} 之间"
+            )
+        if args.allow_duplicate_frames:
+            raise SystemExit("--duplicate-ratio 与 --allow-duplicate-frames 互斥：后者已跳过检查")
     if hasattr(args, "tmp_dir"):
         global TMP_DIR
         TMP_DIR = resolve_tmp_dir(args.tmp_dir)

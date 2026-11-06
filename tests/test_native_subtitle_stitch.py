@@ -801,6 +801,38 @@ class DuplicateFrameTests(unittest.TestCase):
         frames = [self.frame(20 + 50 * index) for index in range(4)]
         MODULE.ensure_distinct_frames(frames, [1, 2, 3, 4])
 
+    def test_two_near_identical_frames_are_rejected(self):
+        # 不是整段冻结：只有第 2、3 帧几乎一样，仍应被拦下。
+        frames = [self.frame(20), self.frame(120), self.frame(120), self.frame(220)]
+        with self.assertRaises(SystemExit) as raised:
+            MODULE.ensure_distinct_frames(frames, [1, 2, 3, 4])
+        message = str(raised.exception)
+        self.assertIn("2.00s 与 3.00s", message)
+        self.assertIn("--duplicate-ratio", message)
+
+    def test_duplicate_ratio_can_be_relaxed_and_tightened(self):
+        # 偏移 4px 的两帧：默认阈值下通过，调高阈值后被拦。
+        frames = [self.frame(20), self.frame(24)]
+        MODULE.ensure_distinct_frames(frames, [1, 2])
+        with self.assertRaises(SystemExit):
+            MODULE.ensure_distinct_frames(frames, [1, 2], ratio=0.2)
+        # 阈值 0 时只有完全一致的帧才算重复。
+        MODULE.ensure_distinct_frames([self.frame(20)] * 2, [1, 2], ratio=0)
+
+    def test_cli_rejects_out_of_range_and_conflicting_duplicate_ratio(self):
+        for extra in (
+            ["--duplicate-ratio", "0.5"],
+            ["--duplicate-ratio", "0.01", "--allow-duplicate-frames"],
+        ):
+            with self.subTest(extra=extra):
+                proc = subprocess.run(
+                    [sys.executable, str(SCRIPT), "render", "missing.mp4",
+                     "--manifest", "missing.json", "--out-dir", "out", *extra],
+                    capture_output=True, encoding="utf-8", errors="replace",
+                )
+                self.assertNotEqual(proc.returncode, 0)
+                self.assertIn("--duplicate-ratio", proc.stderr)
+
     def test_repeated_native_subtitle_band_is_rejected(self):
         frames = [self.frame(20 + 50 * index) for index in range(3)]
         bands = [self.frame(20), self.frame(120), self.frame(120)]
