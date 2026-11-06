@@ -297,7 +297,7 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 - 기존 파일은 `--overwrite`를 지정해야 덮어씁니다.
 - 시스템 임시 폴더에 쓸 수 없는 환경(샌드박스, 기업 정책)에서는 `--tmp-dir <쓰기 가능한 폴더>`(또는 환경 변수 `NSQI_TMP_DIR`, 옵션이 우선)로 프레임 추출 임시 파일 위치를 지정합니다. 지정하지 않으면 시스템 임시 폴더를 쓰며, 폴더가 없거나 쓸 수 없으면 명확한 오류를 냅니다.
 - 일괄 `render`는 기본적으로 첫 실패에서 중단됩니다. `--keep-going`을 쓰면 한 장이 실패해도 나머지를 계속 렌더링하고, 실패 목록(몇 번째 카드, 시간점, 원인)을 출력하며 출력 폴더의 `渲染失败报告.json`에 기록합니다. 종료 코드는 0이 아닙니다. 수정 후 `--resume`을 쓰면 누락되었거나 손상된 카드만 다시 렌더링합니다. 정상 카드는 manifest가 바뀌어도 다시 렌더링하지 않으며, 총괄 이미지와 시간점 파일은 새로 생성됩니다.
-- 렌더링 전에 중복 화면을 검사합니다. 모든 타임스탬프의 화면이 거의 같거나(예: 원본 영상이 정지된 표지 이미지뿐인 경우), 원본 자막 모드에서 이웃한 자막 띠 두 개가 거의 같으면 이미지를 만들지 않고 중단합니다. 의도한 결과라면 `--allow-duplicate-frames`를 추가하세요.
+- 렌더링 전에 중복 화면을 세 가지 경우로 검사합니다. 모든 타임스탬프의 화면이 거의 같은 경우(예: 원본 영상이 정지된 표지 이미지만인 경우), 서로 다른 두 타임스탬프의 화면이 거의 같은 경우(고정 카메라나 강의 형식 녹화에서 자주 생기고, 오류 메시지가 해당 두 타임스탬프를 지정해 알려줍니다), 그리고 원본 자막 모드에서 이웃한 자막 띠 두 개가 거의 같은 경우입니다. 세 가지 중 하나라도 해당하면 이미지를 만들지 않고 중단합니다. 민감도는 `--duplicate-ratio`로 조정하고(0–0.2, 기본값 0.005, 클수록 엄게 판정), 중복이 의도한 결과라면 `--allow-duplicate-frames`를 추가하세요. 두 옵션은 함께 사용할 수 없습니다.
 - 전체 옵션은 `--help`로 확인합니다.
 
 <div align="right"><a href="#readme-top">↑ 맨 위로</a></div>
@@ -415,6 +415,24 @@ yt-dlp --cookies-from-browser chrome --js-runtimes node \
 ```
 
 Cookie는 내보내거나 저장·업로드하지 않으며 저장소에도 넣지 않습니다. yt-dlp는 현재 Deno를 권장합니다. 이미 Node.js가 있다면 `--js-runtimes node`를 명시해 사용할 수 있습니다. 자세한 절차는 [URL 처리 가이드](skills/native-subtitle-quote-image/references/yt-dlp-and-transcripts.md#chrome-cookie-授权流程)를 참고하세요.
+
+</details>
+
+<details>
+<summary><strong>소재를 가지고 올 때 403, 429, 봇 검사가 나오는 경우</strong></summary>
+
+<br>
+
+이 툴은 플랫폼의 속도 제한, DRM, 유료장벽, 지역 제한을 우회하지 않습니다. URL 다운로드는 `scripts/fetch_source.py`를 거치며, 오류 유형을 분류해 정해진 횟수만 재시도하고 모든 시도를 `download-attempts.log`에 기록합니다.
+
+| 오류 | 주요 원인 | 스크립트 동작과 대응 방법 |
+| --- | --- | --- |
+| `HTTP Error 403: Forbidden` | yt-dlp 버전이 사이트 변경을 따라가지 못함, 또는 JavaScript 런타임 부재 | 자동으로 재시도 1회만. 그래도 실패하면 `python3 -m pip install -U "yt-dlp[default]"`로 업그레이드하고 Deno(또는 Node.js + `--js-runtimes node`)를 설정한 뒤 형식 폴백 표를 단계별로 시도 |
+| `HTTP Error 429: Too Many Requests` | 짧은 시간에 요청이 너무 많음 | `--backoff`×2^n 만큼 대기하며 최대 `--retries`회(기본 3회) 재시도. 한 번에 하나의 영상만 처리하고, 일괄 수집이나 IP 변경으로 밀어붙이지 마세요 |
+| "로그인해 봇이 아님을 확인", 연령 확인 | 플랫폼이 로그인 상태를 요구 | **재시도 없이** 중단합니다. 사용자 동의 후 `--extra --cookies-from-browser chrome`로 본인 로그인 세션을 일시적으로 사용 |
+| 로그인 후에도 접근 불가 | 멤버십 전용 콘텐츠, 지역 제한, DRM, 다운로드 불가 | 처리 권한이 있는 다른 소재로 교체 |
+
+가장 안정적인 방법은 로컬 영상을 쓰는 것입니다. 직접 촬영한 영상, 권한을 받은 소재, 또는 플랫폼이 명시적으로 다운로드를 허용하는 소재입니다. 로컬 모드는 `yt-dlp`가 전혀 필요하지 않습니다.
 
 </details>
 

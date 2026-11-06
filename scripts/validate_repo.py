@@ -15,6 +15,7 @@ OPENAI_YAML = SKILL_DIR / "agents" / "openai.yaml"
 RENDERER = SKILL_DIR / "scripts" / "native_subtitle_stitch.py"
 ENV_CHECK = SKILL_DIR / "scripts" / "check_environment.py"
 UPDATE_CHECK = SKILL_DIR / "scripts" / "check_update.py"
+FETCH_SOURCE = SKILL_DIR / "scripts" / "fetch_source.py"
 VERSION_FILE = SKILL_DIR / "VERSION"
 README = ROOT / "README.md"
 README_EN = ROOT / "README_EN.md"
@@ -44,6 +45,7 @@ def main():
         RENDERER,
         ENV_CHECK,
         UPDATE_CHECK,
+        FETCH_SOURCE,
         SKILL_DIR / "references" / "yt-dlp-and-transcripts.md",
         SKILL_DIR / "references" / "end-to-end-workflow.md",
         SKILL_DIR / "references" / "visual-style.md",
@@ -183,7 +185,7 @@ def main():
         if "render-script" not in text:
             errors.append(f"{document.relative_to(ROOT)} 未说明脚本字幕模式")
 
-    for script in (RENDERER, ENV_CHECK, UPDATE_CHECK):
+    for script in (RENDERER, ENV_CHECK, UPDATE_CHECK, FETCH_SOURCE):
         if script.is_file():
             try:
                 compile(script.read_text(encoding="utf-8"), str(script), "exec")
@@ -196,6 +198,7 @@ def main():
         RENDERER,
         ENV_CHECK,
         UPDATE_CHECK,
+        FETCH_SOURCE,
         VERSION_FILE,
         PLUGIN,
     ]
