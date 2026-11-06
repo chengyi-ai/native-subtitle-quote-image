@@ -42,7 +42,7 @@ python3 "<SKILL_DIR>/scripts/check_update.py" --json
 
 ## 按任务读参考文件
 
-- **YouTube 等 URL**：先读 [references/yt-dlp-and-transcripts.md](references/yt-dlp-and-transcripts.md)，获取用户有权处理的视频、元数据和辅助时间轴。URL 任务不能在一次公开请求失败后直接退回“只支持本地视频”：若 YouTube 返回机器人登录验证、年龄验证或用户自己的非公开视频限制，先说明原因并取得授权，再按参考文件用 `yt-dlp --cookies-from-browser chrome` 继续。字幕和视频分两条命令下载；下载前用 `yt-dlp -F` 枚举变体并按 AV1 → VP9 → H.264 择优，下载后必须运行 `native_subtitle_stitch.py check-source VIDEO --min-height 720`（解码前 N 秒无错误、分辨率达标）才能继续；视频报 HTTP 403 或自检失败时按参考文件的格式回退表逐级换变体，低于 720p 的级别须先征得用户确认，每次尝试记入 `download-attempts.log`；字幕报 429 时缩减语言并放慢请求，都不要无限重试。
+- **YouTube 等 URL**：先读 [references/yt-dlp-and-transcripts.md](references/yt-dlp-and-transcripts.md)，获取用户有权处理的视频、元数据和辅助时间轴。URL 任务不能在一次公开请求失败后直接退回“只支持本地视频”：若 YouTube 返回机器人登录验证、年龄验证或用户自己的非公开视频限制，先说明原因并取得授权，再按参考文件用 `yt-dlp --cookies-from-browser chrome` 继续。字幕和视频分两条命令下载；下载前用 `yt-dlp -F` 枚举变体并按 AV1 → VP9 → H.264 择优，下载后必须运行 `native_subtitle_stitch.py check-source VIDEO --min-height 720`（解码前 N 秒无错误、分辨率达标）才能继续；视频报 HTTP 403 或自检失败时按参考文件的格式回退表逐级换变体，低于 720p 的级别须先征得用户确认，每次尝试记入 `download-attempts.log`；字幕报 429 时缩减语言并放慢请求，都不要无限重试。调 yt-dlp 优先用 `scripts/fetch_source.py`：它会识别 403/429 并按类型做有上限的退避重试，自动写 `download-attempts.log`，不静默失败。
 - **读长视频 → 选题 → 写文章/帖子 → 配图**：读 [references/end-to-end-workflow.md](references/end-to-end-workflow.md)。
 - **台词条太高、间隔太宽、缺少美感**：读 [references/visual-style.md](references/visual-style.md)。
 - **报错、出图异常或结果不对**：先查 [references/troubleshooting.md](references/troubleshooting.md)，按「症状 → 先查什么 → 怎么处理」逐项排查。
@@ -51,6 +51,27 @@ python3 "<SKILL_DIR>/scripts/check_update.py" --json
 ## 环境与路径
 
 将 `<SKILL_DIR>` 解析为当前 `SKILL.md` 所在目录的绝对路径；不要假设 Agent 的工作目录就是 Skill 目录。
+
+URL 模式的下载入口（包装 yt-dlp，带 403/429 退避重试与尝试日志）：
+
+```bash
+# 元数据自检（不带 Cookie 的第一步）
+python3 "<SKILL_DIR>/scripts/fetch_source.py" "URL" --mode metadata
+
+# 字幕：先 yt-dlp --list-subs 看真实标签，再只请求需要的一两个
+python3 "<SKILL_DIR>/scripts/fetch_source.py" "URL" --mode subs \
+  --sub-langs zh-Hans,en-orig -o "source/%(id)s/%(id)s.%(ext)s"
+
+# 视频：格式回退表每级换一次 -f
+python3 "<SKILL_DIR>/scripts/fetch_source.py" "URL" --mode video \
+  -f "bv*[height<=1080][vcodec^=av01]+ba" -o "source/%(id)s/%(id)s.%(ext)s"
+```
+
+- 429（请求过密）按 `--backoff`×2^n 退避重试，最多 `--retries` 次（默认 3，上限 6，单次等待封顶 600s）。
+- 403 始终最多重试 1 次；它通常是 yt-dlp 版本落后或该格式签名失效，要靠升级和换 `-f` 解决，而不是多试几次。
+- 登录验证、年龄验证类报错**不重试**，直接停下并要求先取得用户授权；授权后用 `--extra --cookies-from-browser chrome` 透传，脚本不自行添加 Cookie 参数。
+- 每次尝试（含成功）记入 `download-attempts.log`，失败时把 yt-dlp 原始报错和处理建议一起输出到 stderr，退出码非零。
+- 它不绕过 DRM、付费墙、地区限制或平台风控；重试耗尽就停下汇报，不换 IP、不换账号、不遍历浏览器配置。
 
 ```bash
 # 本地原生字幕
@@ -83,7 +104,8 @@ python3 -m pip install -r "<SKILL_DIR>/requirements.txt"
 - 不覆盖已有成品。只有用户明确要替换时才添加 `--overwrite`。
 - 受限环境（沙箱、企业策略）下系统 Temp 不可写时，给 `sample` / `band` / `render` / `render-script` 加 `--tmp-dir <可写目录>`，或设置环境变量 `NSQI_TMP_DIR`（参数优先）；默认仍用系统临时目录。目录不存在或不可写会直接报错，抽帧临时文件用完即删。
 - 批量 `render` 默认遇到失败就中止。需要容错时加 `--keep-going`：单张失败不影响其余，结束时输出失败清单（序号、时间点、原因）并写入 `渲染失败报告.json`，退出码非零且不生成总览图。向用户报告失败清单，修正 manifest 后加 `--resume` 只补渲缺失或损坏的卡；已有效的图即使 manifest 改了也不会重渲（要重渲先删掉对应图），总览图和时间点文件会重新生成。
-- 渲染器遇到重复画面会中止：所有时间点画面几乎相同（疑似静态封面视频或画面冻结），或原生模式相邻字幕条几乎相同。先用 `sample` 核对画面并向用户说明；不要为了出图直接加 `--allow-duplicate-frames`，只有用户确认确实需要时才加。
+- 渲染器遇到重复帧会中止，共三种情形：所有时间点画面几乎相同（疑似静态封面视频或画面冻结）；**任意两个时间点的画面几乎相同**（固定机位素材常见，报错会点名是哪两个时间点）；或原生模式相邻字幕条几乎相同。先用 `sample` 核对画面并向用户说明；不要为了出图直接加 `--allow-duplicate-frames`，只有用户确认确实需要时才加。
+- 重复判定阈值可调：`--duplicate-ratio`（`render` 与 `render-script` 均支持）是缩略图上明显变化像素的占比下限，范围 0–0.2，默认 0.005。调高更严（连景别相近的帧也拦），调低更宽松，0 等于只拦完全一致的帧。不要和 `--allow-duplicate-frames` 同时传（互斥）。默认值不满意时先调阈值，而不是直接跳过检查。
 - 源视频低清时可输出 1440×1920 版面，但必须说明这不等于真实清晰度提升。
 
 ### 保留画面原比例

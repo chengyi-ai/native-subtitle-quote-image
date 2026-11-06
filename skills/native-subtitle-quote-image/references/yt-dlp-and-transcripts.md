@@ -138,7 +138,15 @@ yt-dlp --no-playlist \
   "URL"
 ```
 
-`/` 只在格式**不存在**时生效；某个格式存在但下载时返回 HTTP 403，yt-dlp 不会自动改用下一项。遇到 403 时先更新 yt-dlp 并重试一次，仍失败就按下表逐级换一条 `-f` 重新下载，每级只试一次：
+用 `scripts/fetch_source.py` 代替直接调 yt-dlp，它把 403/429 的识别、退避重试和尝试日志固定下来（详见下文「用 fetch_source.py 处理 403/429」）：
+
+```bash
+python3 "<SKILL_DIR>/scripts/fetch_source.py" "URL" --mode video \
+  -f "bv*[height<=1080]+ba/b[height<=1080]" \
+  -o "source/%(id)s/%(id)s.%(ext)s"
+```
+
+`/` 只在格式**不存在**时生效；某个格式存在但下载时返回 HTTP 403，yt-dlp 不会自动改用下一项。遇到 403 时先更新 yt-dlp 并重试一次（`fetch_source.py` 会自动重试这一次），仍失败就按下表逐级换一条 `-f` 重新下载，每级只试一次：
 
 | 级别 | `-f` 参数 | 说明 |
 | --- | --- | --- |
@@ -163,6 +171,27 @@ python3 "<SKILL_DIR>/scripts/native_subtitle_stitch.py" check-source VIDEO --min
 每次尝试（含 403、自检失败）都追加一行到工作目录的 `download-attempts.log`，记录级别、`-f` 参数、结果（成功 / HTTP 403 / 自检失败 / 用户拒绝低清）和错误摘要。所有级别用尽就停止，把日志内容报告给用户，不要继续尝试 extractor 参数。
 
 分离的视频和音频需要 FFmpeg 合并。原生字幕取帧不依赖音频，但保留带音频的完整源文件方便复核内容。重复执行时复用已有文件，不要无理由重新下载。
+
+## 用 fetch_source.py 处理 403/429
+
+`scripts/fetch_source.py` 是 yt-dlp 的调用包装：把错误分类、重试上限和尝试日志固定下来，避免每次凭印象决定重试几次。三种模式对应上面三步：`--mode metadata`、`--mode subs`、`--mode video`。
+
+| 错误类型 | 识别依据 | 重试策略 |
+| --- | --- | --- |
+| `rate_limited` | `HTTP Error 429` / `Too Many Requests` | 最多 `--retries` 次（默认 3，上限 6），等待 `--backoff`×2^n，单次封顶 600s |
+| `forbidden` | `HTTP Error 403` / `Forbidden` | 始终最多 1 次，间隔 5s |
+| `bot_check` | 要求登录、年龄验证、Cookie | 不重试，直接停下要求授权 |
+| `other` | 其余失败 | 不重试，原样报出 yt-dlp 报错 |
+
+为什么 403 和 429 策略不同：429 是速率问题，等待本身就是解法；403 多是 yt-dlp 版本落后或该格式的签名 URL 已失效，重试再多也不会变，要靠升级 yt-dlp、装好 JavaScript runtime 或换 `-f`。
+
+行为约定：
+
+- 每次尝试（含成功）记一行到 `download-attempts.log`，四列制表符分隔：时间、第几次、错误类型、摘要。`--log` 可改路径。
+- 失败时 stderr 同时给出错误类型、具体处理建议和 yt-dlp 原始报错尾部，退出码非零；不静默失败、不把失败当成“只能处理本地视频”。
+- 不自行添加 Cookie 参数。用户授权后用 `--extra --cookies-from-browser chrome` 透传，`--extra` 必须放在最后。
+- 不绕过 DRM、付费墙、地区限制或平台风控；重试耗尽就停下汇报，不换 IP、不换账号、不遍历浏览器配置。
+- 格式回退表仍由调用方逐级执行：脚本只负责单条命令的 403/429 重试，不自己换 `-f`。
 
 ## 没有可用字幕轨
 
@@ -252,7 +281,7 @@ yt-dlp --js-runtimes node ...
 
 ### 视频下载报 HTTP 403
 
-403 通常只针对某个具体格式，或说明 yt-dlp 版本已落后于站点改动。先更新 yt-dlp 并确认 JavaScript runtime 生效，再按“下载视频”一节的格式回退表逐级重试。若所有格式都返回 403，且无 Cookie 的元数据请求也被拒，转到“登录、Cookies 与访问限制”处理，不要循环重试。
+403 通常只针对某个具体格式，或说明 yt-dlp 版本已落后于站点改动。`fetch_source.py` 会自动重试一次并把这次记入日志；仍失败时先更新 yt-dlp 并确认 JavaScript runtime 生效，再按“下载视频”一节的格式回退表逐级重试。若所有格式都返回 403，且无 Cookie 的元数据请求也被拒，转到“登录、Cookies 与访问限制”处理，不要循环重试。
 
 ### 字幕下载报 HTTP 429
 
@@ -260,7 +289,7 @@ yt-dlp --js-runtimes node ...
 
 1. 确认字幕命令与视频命令是分开的，视频下载不受影响。
 2. 改用 `--list-subs` 中的具体标签，去掉自动翻译轨，只请求一两个语言。
-3. 加 `--sleep-requests 1 --sleep-subtitles 5`，等待几分钟后重试一次。
+3. 加 `--sleep-requests 1 --sleep-subtitles 5`，等待几分钟后重试一次；用 `fetch_source.py --mode subs` 时这步的退避等待已内置，按 `--retries` / `--backoff` 调整即可。
 4. 仍失败时，用已拿到的其他语言字幕定位时间点，或在用户同意后用 Whisper 转写；不要反复请求同一字幕轨。
 
 ### 视频下载成功，但图片里没有字幕

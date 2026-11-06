@@ -297,7 +297,7 @@ Defaults worth knowing:
 - Existing images are never overwritten unless you pass `--overwrite`.
 - If the system temp directory is not writable (sandbox, corporate policy), pass `--tmp-dir <writable-dir>` (or set the `NSQI_TMP_DIR` environment variable; the flag wins) to choose where frame-extraction temp files go. Without it the system temp directory is used; a missing or unwritable directory fails with a clear error.
 - Batch `render` stops at the first failure by default. With `--keep-going`, one failed card no longer blocks the rest: a failure list (card number, timestamps, reason) is printed and written to `渲染失败报告.json` in the output directory, and the exit code is non-zero. After fixing, `--resume` renders only the missing or corrupt cards; valid cards are kept even if the manifest changed, while the contact sheet and timestamp file are regenerated.
-- Before rendering, both modes check for duplicate frames. If every timestamp yields nearly the same picture (for example, the source is a static cover image) or, in native mode, two adjacent subtitle strips are nearly identical, the command stops without writing images. Pass `--allow-duplicate-frames` once you have confirmed it is intended.
+- Before rendering, both modes check for duplicate frames in three cases: every timestamp yields nearly the same picture (for example, the source is a static cover image); **any two timestamps are nearly identical** (common with fixed-camera or lecture-style footage — the error names the two timestamps); or, in native mode, two adjacent subtitle strips are nearly identical. Any of the three stops the command without writing images. Tune the sensitivity with `--duplicate-ratio` (0–0.2, default 0.005; higher is stricter), and pass `--allow-duplicate-frames` once you have confirmed the repetition is intended. The two flags are mutually exclusive.
 - Run `--help` for all options.
 
 <div align="right"><a href="#readme-top">↑ Back to top</a></div>
@@ -419,6 +419,24 @@ yt-dlp --cookies-from-browser chrome --js-runtimes node \
 ```
 
 Cookies are never exported, saved, uploaded, or committed. yt-dlp currently recommends Deno as its JavaScript runtime; an existing Node.js install also works with `--js-runtimes node`. See the [URL acquisition guide](skills/native-subtitle-quote-image/references/yt-dlp-and-transcripts.md#chrome-cookie-授权流程) for the permission boundary and failure handling.
+
+</details>
+
+<details>
+<summary><strong>403, 429, or bot checks while fetching a source</strong></summary>
+
+<br>
+
+This project does not help bypass platform rate limiting, DRM, paywalls, or regional restrictions. URL downloads go through `scripts/fetch_source.py`, which classifies the error, retries within a fixed budget, and logs every attempt to `download-attempts.log`:
+
+| Error | Common cause | Script behavior and what to do |
+| --- | --- | --- |
+| `HTTP Error 403: Forbidden` | yt-dlp is behind a site change, or the JavaScript runtime is missing | Retries at most once automatically. If it still fails, run `python3 -m pip install -U "yt-dlp[default]"`, install Deno (or Node.js with `--js-runtimes node`), then step through the format fallback table |
+| `HTTP Error 429: Too Many Requests` | Too many requests in a short window | Backs off `--backoff`×2^n for up to `--retries` attempts (default 3). Process one video at a time; do not batch-scrape or switch IPs to push through |
+| "Sign in to confirm you're not a bot", age checks | The platform requires a signed-in session | **No retry** — it stops immediately. After you authorize it, pass `--extra --cookies-from-browser chrome` to read your own logged-in session temporarily |
+| Still blocked after signing in | Members-only content, regional limits, DRM, or downloads not permitted | Use a different source you have the right to process |
+
+The most reliable path is a local video: your own footage, licensed material, or downloads the platform explicitly allows. Local mode does not need `yt-dlp` at all.
 
 </details>
 

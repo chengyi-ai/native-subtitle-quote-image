@@ -298,7 +298,7 @@ python3 skills/native-subtitle-quote-image/scripts/native_subtitle_stitch.py ren
 - 默认不覆盖已有图片；确实要替换时加 `--overwrite`。
 - 受限环境下系统临时目录没有写权限时，加 `--tmp-dir <可写目录>`（或设置环境变量 `NSQI_TMP_DIR`，参数优先）指定抽帧临时文件位置；不指定则沿用系统临时目录，目录不存在或不可写会明确报错。
 - 批量 `render` 默认遇到失败就中止；加 `--keep-going` 则单张失败不影响其余，结束时输出失败清单（第几张、时间点、原因）并写入输出目录的 `渲染失败报告.json`，退出码非零。修正后加 `--resume` 只补渲缺失或损坏的图；已有效的图即使 manifest 改了也不会重渲，总览图和时间点文件会重新生成。
-- 出图前会检查重复画面：所有时间点画面几乎相同（例如源视频只是一张静态封面图），或原生模式相邻两条字幕条几乎相同时，直接报错、不出图。确认无误时加 `--allow-duplicate-frames`。
+- 出图前会检查重复画面，共三种情形：所有时间点画面几乎相同（例如源视频只是一张静态封面图）；任意两个时间点的画面几乎相同（固定机位、大师课式录制常见，报错会点名是哪两个时间点）；或原生模式相邻两条字幕条几乎相同。三者任一命中就报错、不出图。判定尺度用 `--duplicate-ratio` 调（阈值 0–0.2，默认 0.005，调高更严）；确认重复是你要的效果时加 `--allow-duplicate-frames`，两者不能同时传。
 - 完整参数用 `--help` 查看。
 
 <div align="right"><a href="#readme-top">↑ 回到顶部</a></div>
@@ -420,6 +420,24 @@ yt-dlp --cookies-from-browser chrome --js-runtimes node \
 ```
 
 Cookie 不导出、不保存、不上传，也不写进仓库。yt-dlp 官方目前推荐用 Deno 做 JavaScript 运行时；已经装了 Node.js 的话也可以用，但要加 `--js-runtimes node`。完整授权边界和故障处理见 [URL 获取参考](skills/native-subtitle-quote-image/references/yt-dlp-and-transcripts.md#chrome-cookie-授权流程)。
+
+</details>
+
+<details>
+<summary><strong>获取素材遇到 403、429 或机器人检测</strong></summary>
+
+<br>
+
+本项目不帮助绕过平台的风控、DRM、付费墙或地区限制。URL 模式下载走 `scripts/fetch_source.py`，它会识别错误类型并做有上限的退避重试，每次尝试记入 `download-attempts.log`：
+
+| 报错 | 常见原因 | 脚本行为与建议做法 |
+| --- | --- | --- |
+| `HTTP Error 403: Forbidden` | yt-dlp 版本过旧，平台改了接口；或缺少 JavaScript 运行时 | 最多自动重试 1 次；仍失败就运行 `python3 -m pip install -U "yt-dlp[default]"` 升级，装好 Deno（或 Node.js 并加 `--js-runtimes node`），再逐级换 `-f` |
+| `HTTP Error 429: Too Many Requests` | 短时间内请求太多 | 按 `--backoff`×2^n 退避重试，最多 `--retries` 次（默认 3）；一次只处理一个视频，不要批量抓取，也不要换 IP 硬冲 |
+| “登录以确认不是机器人”、年龄验证 | 平台要求登录态 | **不重试**，直接停下；按上一节流程经你授权后用 `--extra --cookies-from-browser chrome` 临时读取你自己的登录会话 |
+| 登录后仍无法访问 | 会员内容、地区限制、DRM 或平台不允许下载 | 换一个你有权处理的素材 |
+
+最稳的方式是直接用本地视频：自己拍摄的、已获授权的，或平台明确允许下载的素材。本地模式完全不需要 `yt-dlp`。
 
 </details>
 
